@@ -408,7 +408,7 @@ They block only the named extension or slice, so U1 can proceed.
 | Q4 | How should the list combine repeated Participants across Programs, free-text names, group text, and unnamed roles? What list should a standalone Program offer? | U11 presentation and identity rules. Whole-Event scope with a Program filter stays settled. |
 | Q5 | Are Participant definitions shared between Programs? When a referenced Part crosses Programs, should both reuse one definition or should the destination receive a copy? | U7 cross-Program reuse, U9 reference moves, and U11 identity aggregation. |
 
-Platform details are implementation prerequisites rather than product choices: hostname/port availability, OIDC client registration, and runner provisioning require operator verification.
+Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.
 
 ## CI validation and slice completion
