@@ -1,4 +1,4 @@
-name: test-build-deploy
+name: test-build-image
 on:
   pull_request:
   push:
@@ -12,7 +12,6 @@ concurrency:
 
 jobs:
   test:
-    # Public PR code must never execute on a runner with deployment credentials.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +41,6 @@ jobs:
   build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
-    # Hosted trusted builds also work before repository-scoped runners exist.
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -63,36 +61,9 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/ryannmicua/program-rundown:sha-${{ github.sha }}
-      - name: Record immutable image
+      - name: Record published image digest
         env:
           COMMIT: ${{ github.sha }}
           DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          printf 'Commit: %s\nImage: ghcr.io/ryannmicua/program-rundown@%s\n' "$COMMIT" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
-
-  deploy_dev:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEV_DEPLOY_HOST != '' && vars.DEV_DEPLOY_BRANCH == 'main'
-    needs: build
-    runs-on: [self-hosted, linux, deploy-dev]
-    environment: dev
-    # Serialize all app deployments; do not cancel migrations or deploy-app.
-    concurrency:
-      group: program-rundown-dev-deployment
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Deploy immutable image
-        env:
-          DEV_DEPLOY_HOST: ${{ vars.DEV_DEPLOY_HOST }}
-          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT: ${{ github.sha }}
-        run: |
-          test -n "$DEV_DEPLOY_HOST"
-          test -n "$IMAGE_DIGEST"
-          printf '%s' "$REGISTRY_TOKEN" |
-            ssh -F "$HOME/.ssh/dev-platform-deploy.conf" "dev@$DEV_DEPLOY_HOST" \
-              deploy-app program-rundown "ghcr.io/ryannmicua/program-rundown@$IMAGE_DIGEST"
-          printf 'Deployed commit: %s\nImage: ghcr.io/ryannmicua/program-rundown@%s\n' "$COMMIT" "$IMAGE_DIGEST" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Commit: %s\nImage: ghcr.io/ryannmicua/program-rundown:sha-%s\nDigest: %s\nImmutable image: ghcr.io/ryannmicua/program-rundown@%s\n' "$COMMIT" "$COMMIT" "$DIGEST" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"

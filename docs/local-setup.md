@@ -89,8 +89,7 @@ The operator follows [the build plan's deployment path](build-plan.md#path-to-th
 The private portal credential entry remains `apps.program-rundown`; no credential values belong in this repository.
 
 The workflow tests and builds PRs on GitHub-hosted runners without pushing images.
-Trusted `main` pushes test, publish one `sha-<commit>` GHCR image, and expose its digest to deployment.
-`deploy_dev` stays skipped until `DEV_DEPLOY_HOST` is set and `DEV_DEPLOY_BRANCH=main`.
-The operator must create the `dev` environment and repository-scoped `[self-hosted, linux, deploy-dev]` runner before setting these variables.
-Deployment sends the registry token on SSH stdin to `deploy-app` and serializes replacements without cancelling them.
-The workflow summary records commit and digest. Real HTTPS, Zitadel sign-in, and portal checks remain operator deployment verification.
+Trusted `main` pushes test and publish one `sha-<commit>` GHCR image; the workflow exposes its digest as a job output and in the summary.
+The main Firstmate deploys each published digest to dev from another host.
+This repository does not use a deploy job, deploy runner, repository deployment variables, or a `dev` environment.
+Real HTTPS, Zitadel sign-in, and portal checks remain deployment verification.
