@@ -18,26 +18,30 @@ In this project, "program" always means the document, never the gathering.
 A Program may contain Sections, mini-programs, or both.
 A mini-program is a program within a program, with its own header, optional times, and ordered children.
 Sections and mini-programs can nest; the model supports more than a flat list.
-An optional event-level container can group daily Programs across several days, with more than one Program on a day.
+Each Program stands alone and may optionally link to one Event.
+A Program with no Event is normal.
+For a multi-day gathering, each day or session has a separate, complete Program.
+Several Programs may share a day, such as Sabbath Morning Program and Sabbath Afternoon Program.
 
 Example: the "Divine Service" sheet handed to attendees at a 10:30 a.m. worship service is one Program.
 
 ### Event
 
-An **Event** is the real-world gathering that a Program describes: a worship service, a wedding, a graduation, a conference session.
-An Event may span several days, with several daily Programs describing its flow.
-program-rundown composes and publishes Programs.
-It does not manage the event itself (venue booking, attendance, ticketing, rehearsals).
-An optional **Event container** groups those daily program listings using the existing nesting and mini-program concept.
-Day groups can contain several Programs, such as a morning program and an afternoon program.
-The container organizes listings only; it adds no event logistics.
+An **Event** is an optional, lightweight grouping record for a real-world gathering, such as a worship service, wedding, graduation, or conference.
+It has a name, optional dates, and an ordered list of linked Programs.
+A Program belongs to at most one Event; linking it does not make it a mini-program or part of another Program.
+An Event may link Programs across several days, including several Programs on one day.
+
+program-rundown composes and publishes Programs; the Event only links and lists related Programs together.
+It does not manage the gathering itself (venue booking, attendance, ticketing, rehearsals).
 
 | | Event | Program |
 |---|---|---|
-| What it is | The gathering | The document about the gathering |
-| Example | Saturday worship at 10:30 a.m. | The printed "Divine Service" sheet |
-| Who acts on it | Everyone present | Coordinators write it; attendees read it |
-| Relationship to publication | Takes place in the real world | Can be drafted, published, and revised |
+| What it is | An optional grouping record for a gathering | A complete document describing a day or session |
+| Example | `Example Conference`, linking its daily and session Programs | The printed "Divine Service" sheet |
+| Who acts on it | Coordinators link and order related Programs; readers find them together | Coordinators write it; attendees read it |
+| Relationship to publication | Only groups Programs | Each Program can be drafted, published, and revised on its own |
+| Optional link | Lists its Programs in order | Belongs to one Event or none |
 
 ### Coordinator and Reader
 
@@ -104,6 +108,7 @@ The leading `*` in `*Processional` and `*National Anthem` is text the coordinato
 ## 2. Anatomy of a program list
 
 The sample sheet has a Header, Sections containing Items, and a Footer.
+An optional Event link groups a complete Program with other Programs; it sits outside the Program's internal structure.
 The outline below rebuilds the sample with placeholder names; the hymn titles are kept because they are the public titles of common hymns.
 
 ```text
@@ -190,39 +195,45 @@ These fit optional start/end times and Part extra info.
 Listing a venue or an arrival activity describes the flow; it does not manage bookings, registration, or transport.
 
 This shortened outline adapts that schedule, using placeholder names, venues, and message titles.
-Each daily Program appears as a mini-program under a day group in the optional Event container.
+Each day or session is a separate Program linked to one optional Event.
+The order below is the Event's list of linked Programs, not nested Sections or mini-programs.
 
 ```text
-Event container: Example Conference (July 28–August 1)
-  Day 1: Tuesday, July 28
-    Daily Program: Opening Day
-      Section: Arrival and Registration
-        Item: Registration (start 12:00 noon; end 4:30 p.m.)
-          Part: Registration Host; extra info: description "Venue: Example Hotel"
-      Mini-program: Opening Ceremony (start 7:00 p.m.; end 9:00 p.m.)
-        Section: Evening Worship
-          Item: Keynote Message
-            Part: reference Participant by role Speaker; extra info: title "A Life of Service"
-  Day 2: Wednesday, July 29
-    Daily Program: Wednesday Sessions
-  Day 3: Thursday, July 30
-    Daily Program: Thursday Sessions
-  Day 4: Friday, July 31
-    Daily Program: Friday Sessions
-    Daily Program: Vesper (start 6:30 p.m.; end omitted)
-  Day 5: Saturday, August 1
-    Daily Program: Sabbath Morning Program
-    Daily Program: Sabbath Afternoon Program
+Event: Example Conference (optional dates supplied: July 28–August 1)
+  Linked Programs, in order:
+    1. Program: Day 1
+         Header: DAY 1; date Tuesday, July 28
+         Section: Arrival and Registration
+           Item: Registration (start 12:00 noon; end 4:30 p.m.)
+             Part: Registration Host; extra info: description "Venue: Example Hotel"
+         Section: Opening Ceremony (start 7:00 p.m.; end 9:00 p.m.)
+           Section: Evening Worship
+             Item: Keynote Message
+               Part: reference Participant by role Speaker; extra info: title "A Life of Service"
+         Footer: Program Coordinator | Riley Placeholder
+    2. Program: Day 2
+         Header: DAY 2; date Wednesday, July 29
+    3. Program: Day 3
+         Header: DAY 3; date Thursday, July 30
+    4. Program: Day 4
+         Header: DAY 4; date Friday, July 31
+    5. Program: Vesper
+         Header: VESPER; date Friday, July 31; start 6:30 p.m.; end omitted
+    6. Program: Sabbath Morning Program
+         Header: SABBATH MORNING PROGRAM; date Saturday, August 1
+    7. Program: Sabbath Afternoon Program
+         Header: SABBATH AFTERNOON PROGRAM; date Saturday, August 1
 
-Participant defined once: role Speaker; name Alex Placeholder;
+Participant defined once in Day 1: role Speaker; name Alex Placeholder;
   position Education Director; organization Example Conference
 Keynote Message's Part displays: Alex Placeholder
 ```
 
-The day groups use Sections, and the daily Programs use mini-programs with their own Headers and ordered children.
-The abbreviated days omit their children for readability.
-This reuses nesting rather than introducing event management or requiring one Program per day.
-Standalone Programs do not require an Event container.
+Each linked Program is complete, with its own Header, ordered content, and publication status.
+The abbreviated Programs omit their remaining content for readability.
+Day 4 and Vesper share July 31; the Sabbath Morning and Sabbath Afternoon Programs share August 1.
+Each can stand alone without the Event link.
+Mini-programs remain available for a program within a single Program, as in the Community Gathering example above.
 
 ## 3. Vocabulary
 
@@ -239,7 +250,7 @@ It holds:
   Example: `10:30 a.m.`.
 - **End time** (optional): when the Program or mini-program ends.
   Example: `12:00 p.m.` (illustrative; absent from the sample).
-- **Date** (optional): the day of the event.
+- **Date** (optional): the day described by the Program or mini-program.
   Example: `7 November 2026` (illustrative; absent from the sample).
   The event date differs from the date a coordinator publishes the document.
 - Other optional header lines, such as a venue or a theme, may appear on other programs; the sample has none.
@@ -255,17 +266,19 @@ A Section may also contain a mini-program among its children.
 A mini-program has an optional start, optional end, and optional header date, just as a Program does.
 It may carry an optional [Block label](#block-label-class) for styling or its own settings.
 Example: a `Morning Service` mini-program within a `Community Gathering`, containing a `Dedication` mini-program.
-The same nesting can place daily Programs under day Sections in an optional Event container.
+Mini-programs describe content within a single Program.
+Separate daily or session Programs link through an optional Event instead.
 
-### Event container and daily Program
+### Event link
 
-An **Event container** is an optional outer listing that groups Programs belonging to the same Event across one or more days.
-It uses the existing nesting concept: day Sections group daily Programs represented as mini-programs.
-A **Daily Program** is a Program for a particular day, or for part of that day, with its own Header and ordered children.
-One day may have several daily Programs; the date does not identify a single Program.
-Example: `Sabbath Morning Program` and `Sabbath Afternoon Program` share August 1 under one Event container.
+An **Event link** optionally associates a complete Program with one Event.
+A Program belongs to at most one Event, and having no Event is normal.
+The Event has a name, optional dates, and an ordered list of its Programs.
+Each Program keeps its own Header, content, and publication status.
+One day may have several Programs; the date does not identify a single Program.
+Example: `Sabbath Morning Program` and `Sabbath Afternoon Program` share August 1 and link to `Example Conference`.
 
-The container groups the composed listings; the Event remains the real-world gathering.
+The Event only links and lists the Programs together.
 It does not manage venues, attendance, tickets, rehearsals, or other logistics.
 
 ### Section
@@ -452,16 +465,15 @@ There is no version history or new published version per edit.
 
 | Term | Definition | Example |
 |---|---|---|
-| Program | The composed document listing the order of an event and who does each part | The "Divine Service" sheet |
-| Event | The real-world gathering, possibly spanning days, that Programs describe; not managed by program-rundown | A conference from July 28 through August 1 |
-| Event container | An optional outer listing grouping daily Programs through nested day Sections and mini-programs; no event logistics | `Example Conference` with five day groups |
-| Daily Program | A Program for a day or part of a day; several may share a day | `Sabbath Morning Program` and `Sabbath Afternoon Program` on August 1 |
+| Program | A complete, standalone document listing a day or session's flow and who does each part; optionally linked to one Event | The "Divine Service" sheet |
+| Event | An optional grouping record with a name, optional dates, and an ordered list of linked Programs; no event logistics | `Example Conference`, July 28–August 1 |
+| Event link | An optional association between a Program and at most one Event | `Sabbath Morning Program` linked to `Example Conference` |
 | Coordinator | A person who composes and publishes a Program and may read it as a Draft | A program coordinator |
 | Reader | A person who follows a published Program | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
 | Draft | A working Program that Coordinators may read before publication | Wednesday's unfinished Saturday listing |
 | Header | The identifying block of a Program or mini-program: title, optional start, optional end, optional date | `DIVINE SERVICE`, `10:30 a.m.` |
-| Mini-program | A program within a Program, with its own Header, optional times, and ordered children; nesting is supported | `Morning Service` within `Community Gathering` |
+| Mini-program | A program within a single Program, with its own Header, optional times, and ordered children; nesting is supported | `Morning Service` within `Community Gathering` |
 | Section | An ordered group of Items, optionally headed; may contain nested Sections or mini-programs | `CALL TO WORSHIP`; an unheaded closing Section |
 | Heading | A Section's optional visible title | `WORSHIP THROUGH GIVING` |
 | Block | A grouping such as a Section or mini-program | Section headed `THE SPOKEN WORD` |
@@ -479,7 +491,7 @@ There is no version history or new published version per edit.
 | Role | A named function usable as a standalone Part value or a reference to a Participant; no name required | `Speaker` |
 | Standing role | A function applying to the whole Program, credited in the footer | `Pianist` |
 | Start time / end time | Independently optional times on a Program, mini-program, Section, or Item | Start only: `10:30 a.m.`; end only: `12:00 p.m.` |
-| Date | Optional event day on a Program or mini-program Header | `7 November 2026` |
+| Date | Optional day described by a Program or mini-program Header | `7 November 2026` |
 | Honorific | A courtesy title before a participant's name | `Dr.` |
 | Subtitle | Participant information shown under the name, which may combine position and organization | `Education Director, Example Conference` |
 | Footer | The closing list of standing roles and their Parts | `Presider \| Sam Sample` |
@@ -489,7 +501,7 @@ There is no version history or new published version per edit.
 ### Settled decisions
 
 Nesting is supported: a Program may contain Sections and mini-programs, and those groups may contain further groups.
-A mini-program has its own Header, optional times, and ordered children.
+A mini-program stays within a single Program and has its own Header, optional times, and ordered children.
 The earlier decisions remain in place, with the additional decisions below.
 
 1. **Time per item.**
@@ -520,9 +532,12 @@ The earlier decisions remain in place, with the additional decisions below.
 10. **Draft readership.**
     Coordinators may read a Draft.
 11. **Multi-day listings.**
-    An optional Event container groups daily Programs using nested day Sections and mini-programs.
-    A day can hold several Programs, such as Sabbath Morning and Sabbath Afternoon Programs.
-    The container groups program listings only; event logistics remain outside this project.
+    Use separate, complete Programs for each day or session, each able to stand alone.
+    Several Programs may share a day, such as Sabbath Morning and Sabbath Afternoon Programs.
+    Each Program may optionally link to one Event; a Program with no Event is normal.
+    The Event is a lightweight grouping record with a name, optional dates, and an ordered list of its Programs.
+    It only links and lists Programs together; event logistics remain outside this project.
+    Use mini-programs only for a program within a single Program.
 12. **Part extra info.**
     A Part may optionally include a title, topic, name, or description of the part being performed, including a venue description.
     Item Detail remains free text and stays available.
