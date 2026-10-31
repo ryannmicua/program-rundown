@@ -73,7 +73,7 @@ export function Programs() {
       <p className="eyebrow">Standalone Program · Draft</p>
       <h2>{creating ? 'New Program' : saved?.title || 'Open Draft'}</h2>
       {saved && <HeaderSummary header={saved}/>}
-      {error && <div role="alert"><p>{error}</p>{!creating && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
+      {error && <div role="alert"><p>{error}</p>{!creating && (!saved || conflict) && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
       {message && <p role="status">{message}</p>}
       {!creating && !saved && !error && <p role="status">Loading Draft…</p>}
       {kept && <aside className="kept-header"><h3>Your unsaved entries</h3><p>{kept.title}</p><HeaderSummary header={kept}/>{!conflict && <button type="button" onClick={() => { setHeader(kept); setMessage('Review your entries, then save against the latest Draft.'); }}>Reapply my entries</button>}</aside>}

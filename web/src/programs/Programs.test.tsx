@@ -32,3 +32,23 @@ it('shows field errors without losing a new Header', async () => {
   await screen.findByText('Enter a title between 1 and 200 characters.');
   expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('  ');
 });
+
+it('keeps unsaved entries on a failed save of an existing Draft without offering a reload', async () => {
+  history.replaceState({}, '', '/programs/1');
+  const program = { id: 1, title: 'Original Gathering', date: null, startTime: null, endTime: null, status: 'Draft', version: 1 };
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program }) })
+    .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'My unsaved title', version: 2 } }) });
+  vi.stubGlobal('fetch', fetcher);
+  render(<Programs />);
+  await screen.findByDisplayValue('Original Gathering');
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'My unsaved title' } });
+  fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
+  await screen.findByRole('alert');
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('My unsaved title');
+  fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
+  await screen.findByText('Draft saved.');
+  expect(JSON.parse(fetcher.mock.calls[2][1].body)).toMatchObject({ title: 'My unsaved title', version: 1 });
+});
