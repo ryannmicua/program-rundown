@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+web/dist
+.env
+data
+feedback-data
+*.sqlite*
+test-results
+playwright-report
