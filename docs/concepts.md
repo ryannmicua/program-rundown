@@ -5,6 +5,7 @@ It settles the vocabulary first, so the data model and the app can build on it l
 It is conceptual: it names things and their attributes, and it does not prescribe storage, schema, or UI.
 
 All names of people in the examples are placeholders.
+The reference image is not included in this repository.
 
 ## 1. Core concepts
 
@@ -28,14 +29,14 @@ It does not manage the event itself (venue booking, attendance, ticketing, rehea
 | What it is | The gathering | The document about the gathering |
 | Example | Saturday worship at 10:30 a.m. | The printed "Divine Service" sheet |
 | Who acts on it | Everyone present | Coordinators write it; attendees read it |
-| Can have versions | No | Yes (draft, then published) |
+| Relationship to publication | Takes place in the real world | Can be drafted, published, and revised |
 
 ### Coordinator and Reader
 
 Two audiences use a Program in different ways.
 
 - A **Coordinator** composes the Program: picks the sections and items, fills in hymn titles, and assigns people.
-  Example: the program coordinators named in the footer of the sample sheet.
+  Example: `[Coordinator name]`, credited as Program Coordinator in the footer.
 - A **Reader** follows the Program during the event to know what comes next and who leads it.
   Example: an attendee holding the sheet, or someone viewing it on a phone.
 
@@ -47,8 +48,8 @@ That use is a [Participant](#participant), not the Reader audience, even though 
 
 A Program has a **status**.
 
-- **Draft**: the coordinator is still composing it.
-  Readers do not see it.
+- **Draft**: a working document the coordinator has not released as the published listing.
+  Draft access permissions remain an open choice.
 - **Published**: the coordinator has released it to readers, for printing or sharing.
 
 Example: on Wednesday the coordinator drafts Saturday's Program with "Speaker: TBA".
@@ -131,22 +132,8 @@ THE SPOKEN WORD                     DR. ALEX PLACEHOLDER  <- Featured block: hea
  Program Coordinator | Robin Sample & Jordan Sample
 ```
 
-How the parts relate (conceptual only, not a schema):
-
-```mermaid
-erDiagram
-    PROGRAM ||--|| HEADER : "opens with"
-    PROGRAM ||--|{ SECTION : "contains, in order"
-    SECTION ||--o{ ITEM : "contains, in order"
-    SECTION }o--o| ASSIGNEE : "may be led by"
-    ITEM }o--o{ ASSIGNEE : "is performed by"
-    ITEM }o--o{ MARKER : "is tagged with"
-    PROGRAM ||--o{ STANDING_ROLE : "credits, in footer"
-    STANDING_ROLE }o--|{ PARTICIPANT : "is held by"
-    ASSIGNEE }o--o| ROLE : "may refer to"
-```
-
-The featured block is left out of this picture on purpose: where it fits is open question 4.
+Section order gives the sequence of groups; item order gives the sequence within a group.
+The featured block's relationship to sections and items remains open question 4.
 
 ## 3. Vocabulary
 
@@ -161,9 +148,11 @@ It holds:
   Example: `DIVINE SERVICE`.
 - **Start time** (optional): when the event starts.
   Example: `10:30 a.m.`.
-- **Date** (optional): the day of the event.
-  The sample shows no date, because a sheet handed out on the day does not need one.
-  A Program shared online or archived usually does.
+- **Date** (when included): the day of the event.
+  Example: `7 November 2026` (illustrative; absent from the sample).
+  The sample shows no date; the reason is unknown.
+  The event date differs from the date a coordinator publishes the document.
+  Whether the event date is required remains open.
 - Other optional header lines, such as a venue or a theme, may appear on other programs; the sample has none.
 
 ### Section
@@ -182,7 +171,8 @@ Attributes:
 
 ### Item
 
-An **Item** is one line in a section: one thing that happens, in order.
+An **Item** is one part of a section: one thing that happens, in order.
+An item can wrap across several printed lines; a line break does not create another item.
 "Item" is the proposed term; "element" and "line" are the alternatives (see [open questions](#7-open-questions)).
 
 Attributes:
@@ -190,8 +180,9 @@ Attributes:
 - **Label** (required): what happens.
   Example: `Hymn of Celebration`, `Invocation`, `Offertory Prayer`.
 - **Detail** (optional): the specific content of this item, such as a hymn title or a scripture reference.
-  Titles show in quotes and italics.
+  The sample shows hymn titles in quotes and italics; this is a presentation convention.
   Example: `"We Love Thy Sabbath Lord"` on the `Hymn of Celebration` item.
+  Another Program might pair `Scripture Reading` with the detail `Psalm 100:1–5`.
   Many items have no detail, such as `Invocation`.
 - **Assignee** (usually present): who performs the item.
   Example: `Congregation`, `Jamie Example`, `Speaker`.
@@ -211,11 +202,14 @@ The sample shows four kinds:
 | Role reference | A role whose holder is named elsewhere in the Program | `Speaker` on `Invocation`; `Presider` on `CALL TO WORSHIP` |
 
 A role reference lets the coordinator name the person once and refer to the role everywhere else.
-In the sample, `Speaker` resolves to the person in the featured block, and `Presider` resolves to the footer entry `Presider | Sam Sample`.
+In the sample, `Speaker` appears to refer to the featured person, and `Presider` to the footer entry `Presider | Sam Sample`.
+Those connections are implicit in the printed listing; rules for resolving them remain open.
 
 ### Participant
 
-A **Participant** is a person who takes part in the Program.
+A **Participant** is a person or group taking part in the flow described by the Program.
+Use Participant for who takes part and Assignee for their responsibility in an item, section, or featured block.
+Example: `Congregation` is a group Participant assigned to `Praise Songs`.
 The same participant can appear many times: in items, in the featured block, and in the footer.
 
 Example: `Morgan Pianist` performs `Offertory Music` and is also credited as `Pianist | Morgan Pianist` in the footer.
@@ -230,7 +224,8 @@ A **Role** is a named function in the Program that a participant fills.
 Example: `Presider`, `Speaker`, `Pianist`, `Choristers`, `Deacons`, `Program Coordinator`.
 
 A role is not a person.
-The `Speaker` role exists in every worship Program; who holds it changes each week.
+For example, different participants may hold `Speaker` in successive Programs.
+A Program need not include every role shown in the sample.
 
 ### Standing role
 
@@ -246,9 +241,9 @@ Example: `Deacons | Chris Example & Drew Example`.
 A **Marker** is a short symbol before an item's label that tells readers something about that item.
 Example: `*` before `*Introit`, `*Prayer Hymn`, `*Pastoral Prayer`, and `*Hymn of Response`.
 
-A marker has a meaning, given by a **marker legend**.
-The sample sheet does not print its legend.
-In many order-of-service sheets, `*` means "please stand"; this reading is inferred from common practice, not stated on the sample.
+A **Marker legend** explains what a marker means.
+For example, a coordinator could define `* = Please stand` in another Program.
+The sample has no visible legend, so this document leaves its marker meaning unspecified.
 
 ### Featured block
 
@@ -265,7 +260,8 @@ Attributes:
   Example: `Education Director, Example Conference`.
 
 The featured block has no label-detail-assignee lines of its own.
-Its participant usually also holds a role used elsewhere: in the sample, `Speaker` on `Invocation` and `Benediction` points to this person.
+The `Speaker` references on `Invocation` and `Benediction` appear to point to the featured participant.
+The subtitle describes that participant; it differs from an item detail such as a hymn or scripture title.
 
 ### Footer
 
@@ -281,6 +277,7 @@ Program Coordinator | Robin Sample & Jordan Sample
 ```
 
 The separator (`|`) and the joiner between names (`and`, `&`) are presentation choices, not data.
+Footer entries credit people rather than adding activities to the event sequence.
 
 ## 4. What the sample shows beyond the basic shape
 
@@ -297,23 +294,13 @@ These details in the sample affect the model and are easy to miss.
   `CALL TO WORSHIP` has `Congregation`, `Speaker`, and `Jamie Example` as assignees.
 - **No item shows its own time.**
   Only the header has a time.
-- **The printed sheet carries other content.**
-  The reverse side of the sample shows an announcements page.
-  Announcements are not part of the program list and are out of scope for this document.
 
 ## 5. Program lifecycle
 
-A Program moves from draft to published.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Draft : coordinator creates program
-    Draft --> Draft : coordinator edits
-    Draft --> Published : coordinator publishes
-    Published --> [*]
-```
-
-Whether a published Program can return to draft, or be edited in place, is an open question.
+A coordinator composes a Draft and publishes it for readers.
+Publication status describes whether the listing has been released; it does not establish access permissions or revision rules.
+For example, a coordinator may prepare a Draft on Wednesday and release the completed listing on Friday.
+Whether later corrections replace that listing or create another published version remains open.
 
 ## 6. Glossary
 
@@ -328,17 +315,17 @@ Whether a published Program can return to draft, or be edited in place, is an op
 | Section | An ordered group of items under a heading | `CALL TO WORSHIP` |
 | Heading | The title of a section or featured block | `WORSHIP THROUGH GIVING` |
 | Section assignee | A person or role who leads a whole section | `Presider` on `CALL TO WORSHIP` |
-| Item | One ordered line in a section | `Hymn of Celebration` line |
+| Item | One ordered part of a section, regardless of printed line breaks | `Hymn of Celebration` item |
 | Label | What happens in an item | `Offertory Prayer` |
 | Detail | Optional specific content of an item, such as a hymn title | `"Holy, Holy, Holy"` |
-| Assignee | Who performs an item: a person, several people, a group, or a role reference | `Congregation` |
-| Participant | A person who takes part in the Program | `Jamie Example` |
+| Assignee | Who leads or performs an item, section, or featured block: people, a group, or a role reference | `Congregation` |
+| Participant | A person or group taking part in the described flow | `Jamie Example`, `Congregation` |
 | Group | A collective assignee that is not a list of names | `Congregation` |
 | Role | A named function a participant fills | `Speaker` |
 | Role reference | An assignee that names a role whose holder appears elsewhere | `Speaker` on `Benediction` |
 | Standing role | A role held for the whole Program, credited in the footer | `Pianist` |
 | Marker | A symbol before an item label that tags the item | `*` |
-| Marker legend | The meaning of each marker | `*` = please stand (inferred) |
+| Marker legend | The meaning of each marker | `* = Please stand` (illustrative; absent from the sample) |
 | Featured block | A highlighted part that presents a featured participant | `THE SPOKEN WORD` |
 | Honorific | A courtesy title before a participant's name | `Dr.` |
 | Subtitle | A participant's title or affiliation shown under the name | `Education Director, Example Conference` |
@@ -350,7 +337,7 @@ The model has real choices on these points; each needs a decision before the dat
 
 1. **Time per item.**
    Is time only a property of the Program (the start time), or can each item or section also have a time or duration?
-   The sample shows only a start time, but a conference agenda would need per-item times.
+   The sample shows only a start time; another Program might need per-item times.
 2. **Date.**
    Is a date a required part of the Program, optional, or taken from the Event?
    The sample shows no date.
@@ -365,16 +352,11 @@ The model has real choices on these points; each needs a decision before the dat
 6. **Term for a within-section line.**
    Item, Element, or Line?
    This document uses Item: "Line" describes layout, and "Element" is too generic.
-7. **Assignee model.**
-   Is an assignee always one value of one kind, or a list that can mix people, groups, and role references?
-   Is a group such as `Congregation` a special participant or its own kind?
-8. **Section assignee.**
-   Is a section assignee its own attribute, or an item without a label?
-9. **Detail kinds.**
+7. **Assignments.**
+   May an item omit its assignee or combine people, groups, and role references?
+   Must role references resolve to named holders within the same Program?
+8. **Detail kinds.**
    Is a detail free text, or does it have kinds (song title, scripture reference, note) that change how it displays?
-10. **Editing after publish.**
-    Can a published Program be edited in place, or does a change create a new version?
-    Do readers see that it changed?
-11. **Role resolution.**
-    Must every role reference (such as `Speaker`) resolve to a standing role or featured participant in the same Program?
-    What does a reader see when it does not?
+9. **Publication.**
+   Who may read a Draft?
+   Do later changes replace the published listing or create another version, and how do readers know it changed?
