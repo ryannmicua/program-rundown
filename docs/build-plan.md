@@ -16,17 +16,21 @@ The application must preserve these requirements from the concepts:
 | --- | --- | --- |
 | R1 | Standalone Programs have a required title, optional date, and independently optional start and end times. | U2 |
 | R2 | Ordered Sections and Items support free-text Detail, unheaded Sections, nesting, mini-program Headers, optional times, and optional block labels. | U3, U5 |
-| R3 | Coordinators can read Drafts and publish Programs. Later edits replace the published content, without version history. | U2, U4 |
-| R4 | Coordinators manage flexible Parts, Part extra info, reusable Participants, Roles, and Footer standing roles. | U6, U7 |
+| R3 | Event coordinators manage every linked Program, including Drafts; standalone Programs have their own coordinator. Anyone reads a Published Program by link without signing in. Later edits replace published content, without version history. | U2, U4, U8 |
+| R4 | Coordinators manage flexible and parallel Parts, Part extra info, Participant definitions shared between Programs, Roles, and Footer standing roles. | U6, U7, U9 |
 | R5 | An optional Event links and orders complete Programs, optionally grouped by each Program's own date. | U8 |
-| R6 | Parts move within their Program or between Programs linked to the same Event, never across Events. | U9 |
+| R6 | Parts move within their Program or between Programs linked to the same Event, never across Events. Occupied destinations retain all Parts in parallel. Copies offer `Copy without Participant` and `Copy everything`. | U9 |
 | R7 | Blank, omitted, and role-only Parts without named holders count as unassigned. Extra info alone does not assign anyone. | U10 |
-| R8 | The Participant list covers the whole Event and can be filtered to one Program. | U11 |
+| R8 | The Participant list covers the whole Event, filterable by Program; standalone Programs offer their own list. Group shared references by definition, preserve direct text per Part, and show unnamed roles separately. | U11 |
 | R9 | Dev has one synthetic test user, accessible demo data, portal registration, and feedback absent from production. | U1 onward |
+| R10 | Coordinators can create a separate Draft Program from an available template. Template management and carry-over choices await T1–T2. | U12 |
 
 R6–R8 are settled decisions, replacing the three earlier open questions.
+The follow-up Q1–Q5 are also settled; the decision record below names each answer.
 A standalone Program permits internal Part moves; sharing no Event does not authorize moves between two standalone Programs.
 Participant group text remains valid without enumerating individuals.
+Published Programs are reachable by shared links, including links from their Event page.
+There is no discoverable public directory; link sharing meets the stated reader need without adding public browsing scope.
 
 Recurrence, dated Event occurrences, and copy-forward remain deferred entirely.
 Event logistics, attendance, venue booking, ticketing, and rehearsals remain outside the product.
@@ -35,8 +39,8 @@ Realtime collaboration, publication history, and custom PDF generation are outsi
 ## Architecture and stack proposal
 
 Use the Steward prototype's one-container pattern, with real identity and isolated feedback storage.
-The following choices are proposals for implementation, grounded in the inspected references rather than existing Program Rundown code.
-The repository currently contains only its README and concepts document.
+The following choices describe the planned architecture, grounded in the inspected references.
+U1 now provides the signed-in shell and isolated dev feedback; Program authoring starts in U2.
 
 | Choice | Proposal and rationale |
 | --- | --- |
@@ -44,7 +48,7 @@ The repository currently contains only its README and concepts document.
 | Product database | SQLite in a persistent volume, with explicit, ordered migrations and foreign keys. This matches Steward and keeps the initial dev application small. |
 | Feedback database | A second SQLite file in a separate persistent volume, opened only by the optional feedback module. Product migrations and demo seeds never open it. |
 | Identity | Zitadel OpenID Connect authorization-code flow with PKCE, using server-side sessions and secure, HttpOnly cookies. Use a maintained OIDC client library. |
-| Authorization | Server checks on every read and mutation. The dev test subject receives a narrowly configured coordinator grant; broader policy awaits Q1. |
+| Authorization | Server checks on every read and mutation. Event coordination grants access to every linked Program, including Drafts; standalone Programs use their own coordinator. Published reading needs no session. |
 | Validation | Server-owned domain validation and database constraints; share display rules with the frontend where practical. The browser never determines permissions. |
 | Rendering | One Program renderer for coordinator preview, published reading, and print CSS. Escape entered text and keep block labels separate from executable CSS. |
 | Packaging | Multi-stage Docker build, non-root runtime, one port (`3000`), `/health`, and persistent product and feedback mounts. Pin dependencies and image versions during U1. |
@@ -75,11 +79,12 @@ Add schema only as each slice needs it, rather than implementing the entire mode
 | Program | Stable ID, Header fields, `draft`/`published` status, optional Event link, and a revision counter for conflict detection. |
 | Content | Ordered nodes with Program ID, parent ID, and kind: Section, mini-program, or Item. Check allowed parents and prevent cycles. |
 | Ordering | Transactional sibling ordering; moving content preserves descendant ownership. Root content contains Sections or mini-programs; Items belong to Sections. |
-| Parts | An optional assignment attached to an eligible node or Footer entry, plus independent extra-info fields. Omitted assignments remain representable without placeholder people. |
+| Parts | Zero or more independently addressable assignments at an eligible node or Footer entry, each with independent extra info. Moving or copying to an occupied spot appends a parallel Part. |
 | Part values | Explicit blank, free text, role, structured role/name, and Participant reference forms. Store stable reference IDs and the selected name/role display mode. |
-| Participants | Reusable definitions with role, optional name, honorific, position, organization, and subtitle. Preserve Program context; cross-Program reuse policy awaits Q5. |
+| Participants | Definitions shared between Programs, with role, optional name, honorific, position, organization, and subtitle. Use stable identities and explicit reuse; matching text never merges people. Check access before selection, reuse, or edits. |
 | Footer | Ordered standing-role entries with the same Part rules, including group text for multiple holders. Footer entries are outside the activity sequence. |
 | Event | Name, optional dates, linked Program ordering, and optional date-grouping preference. Date groups derive from Program dates, never occurrence records. |
+| Template | Reusable starting structure, instantiated as a separate Draft with its own coordinator and optional Event link. Final fields and access scope depend on T1–T2. |
 | Feedback | Independent note ID, timestamp, route, sanitized page context, optional element context, reporter label, and done state. No foreign keys into demo tables. |
 
 Keep routes thin and put assignment display, unassigned classification, tree validation, and move authorization in domain modules.
@@ -87,6 +92,8 @@ Save an edit atomically and check the expected revision to prevent silent lost u
 The revision counter detects conflicts; it does not store publication versions.
 After a successful edit to a Published Program, its existing reader URL shows the replacement content immediately.
 Draft read restrictions apply to detail routes, listings, Event pages, print routes, and participant aggregation alike.
+Anonymous reader routes expose only Published Programs; coordinator Participant selection and aggregation still require authorization.
+Shared Participant edits affect every reference, including published content; show affected Programs before saving without revealing inaccessible content.
 
 Suggested implementation areas are `src/auth/`, `src/domain/`, `src/api/`, `src/db/migrations/`, `src/demo/`, and `web/src/`.
 Keep feedback self-contained in `src/feedback/` and `web/src/feedback/`.
@@ -177,23 +184,28 @@ Offer an explicit dev-only reset later if useful; it must exclude feedback, iden
 | Another week of `Sabbath` | Separate Vesper and Divine Worship Programs on November 13–14. These are explicit Programs, without recurrence or copy-forward. |
 | Event `Example Conference` | Two dated session Programs and an undated Program. Provides a second Event for forbidden cross-Event move checks. |
 | Sections and Items | `Call to Worship`, `The Spoken Word`, `*Introit`, `Prayer`, and `Closing Remarks`; include start-only, end-only, both, and neither. |
-| Participants | `Riley Placeholder` as coordinator credit, `Alex Placeholder` as Speaker, `Jamie Example` for reading/prayer, and `Morgan Pianist` for music. |
+| Participants | `Riley Placeholder` as coordinator credit, `Alex Placeholder` as Speaker, `Jamie Example` for reading/prayer, and `Morgan Pianist` for music. Reuse one definition across Programs; include distinct definitions with matching names. |
 | Assignment variants | Blank; extra-info-only; `Congregation`; `Pat Example and Lee Example`; standalone `Speaker`; structured role with/without a name; references by name/role. |
 | Participant details | `Dr.`, `Education Director`, `Example Conference`, and a subtitle on the Speaker; Part topic `A Life of Service` stays separate. |
 | Publication | At least one Published and one Draft Program in an Event, demonstrating independent status and draft visibility rules. |
 
-Grant the synthetic test user access to every demo Program and Event.
+The dev test user acts as coordinator without another role or manual grant step.
+The seed reads the configured coordinator issuer and subject from the existing environment configuration.
+It makes that identity coordinator of every demo Program and, from U8, every demo Event.
+Do not hardcode or commit a real issuer/subject mapping, login, or credential in fixtures.
+Footer coordinator credits are display text and do not grant access.
 Do not seed unsupported future structures early: U1 has an empty product collection and working feedback; U2 adds Program headers; later slices add their fixtures.
 Full demo events, programs, parts, and participants become available by U8.
-U9–U11 extend those fixtures for move, unassigned, and participant-list verification.
+U9–U11 extend those fixtures for parallel Parts, both copy options, unassigned review, and participant-list verification.
+U12 adds a placeholder template only after its open choices are answered.
 
 ## Ordered vertical slices
 
 Ship in the order below. Each slice includes its migration, API behavior, UI, seed extension, and tests; none is a database-only or UI-only milestone.
 U1 deliberately dedicates the walking skeleton to dev feedback, so feedback is its own early slice and is live on the first dev deploy.
 Program authoring begins in U2, independently of the feedback module.
-Dependencies on new product questions are explicit; the settled R6–R8 choices do not block planning.
-This is the default delivery order. U10 and U11 can proceed from their listed dependencies while U9 awaits a product answer.
+Q1–Q5 no longer block these slices; only U12 awaits the new template choices T1–T2.
+This is the default delivery order. U10 and U11 can proceed from their listed dependencies independently of U9.
 
 ### 1. U1 — Deployed walking skeleton with isolated dev feedback
 
@@ -231,11 +243,12 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 
 - Save a required title with no date or times; reopen the same Program after a process restart.
 - Save start-only, end-only, both, and neither independently. No implicit duration or required paired time appears.
-- The dev test user can read its Draft; an unauthenticated request cannot read or mutate it.
+- A standalone Program uses its own coordinator. The configured dev coordinator can create, read, and edit its seeded Draft without another role.
+- Unauthenticated requests and a different signed-in identity cannot read or mutate that Draft, including through listing and detail APIs.
 - Blank titles and malformed dates/times return useful errors without partial writes; stale edits show a recoverable conflict.
 
 **Files and proof:** `src/api/programs.ts`, `src/db/migrations/`, `web/src/programs/`, `test/programs.test.ts`, `e2e/draft.spec.ts`.
-**Dependencies:** U1. Q1 must be settled before extending access beyond the configured dev tester.
+**Dependencies:** U1. Apply the settled standalone coordinator rule; Event-wide access arrives in U8.
 
 ### 3. U3 — Compose a simple ordered rundown
 
@@ -259,17 +272,19 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 **Goal and outcome:** A coordinator publishes a Draft and a reader follows or prints its current content.
 
 **In:** Publish action, reader URL, server-enforced visibility, shared renderer, mobile reading, and print CSS.
-**Out:** Version history, staged edits to published content, custom PDF generation, and Event-wide publication.
+**Out:** Version history, staged edits to published content, custom PDF generation, Event-wide publication, and discoverable public listings.
 
 **Acceptance and tests:**
 
 - A coordinator previews a Draft; a reader cannot retrieve it through direct URLs or APIs.
-- Publish and open the reader URL under the access policy selected in Q2.
+- Publish and open the reader URL and printable view without a session; reader APIs also allow anonymous Published reads.
+- Anonymous readers cannot edit or publish; a different signed-in identity gains no coordinator rights from the published link.
+- Keep Draft titles/content out of anonymous listings, APIs, and print routes. Do not add a discoverable public directory.
 - Edit a Published Program; the same URL shows the replacement without another version or publication step.
 - Print the listing without editor controls or feedback. A narrow viewport keeps labels and content readable.
 
 **Files and proof:** `src/api/publication.ts`, `web/src/reader/`, `test/publication.test.ts`, `e2e/publish-print.spec.ts`.
-**Dependencies:** U3; Q2 for reader access, and Q1 if multiple coordinators are introduced.
+**Dependencies:** U3. Q1–Q2 are settled; U8 extends access to Event coordinators.
 
 ### 5. U5 — Compose nested Sections and mini-programs
 
@@ -293,7 +308,8 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 **Goal and outcome:** The coordinator assigns, changes, and clears who leads Items, Sections, mini-programs, and Footer roles.
 
 **In:** Blank, text, role, and structured role/name Parts; independent extra info (title, topic, name, description); ordered Footer entries; editor, reader, and print rendering.
-**Out:** Participant references, moving assignments, and participant aggregation.
+Represent each spot as capable of holding independently editable parallel Parts; U9 introduces occupied-destination moves and copies.
+**Out:** Participant references, moving or copying assignments, and participant aggregation.
 
 **Acceptance and tests:**
 
@@ -310,6 +326,7 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 **Goal and outcome:** The coordinator defines a Participant once and reuses the definition in repeated Parts and Footer credits.
 
 **In:** Participant CRUD, reference selection/display mode, role-only definitions, honorific/subtitle/position/organization, and reference validation.
+Allow explicit sharing between Programs the coordinator may manage, including standalone Programs.
 **Out:** Event aggregation and automatic identity matching between Programs.
 
 **Acceptance and tests:**
@@ -318,9 +335,11 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 - A role reference displays the name when present, otherwise the role label; changing the definition updates its references.
 - Participant position/organization/subtitle remain separate from Part extra info and Item Detail.
 - Prevent dangling references and accidental name-based identity merging; explicitly select the intended definition when labels collide.
+- Reuse one definition in two Programs; edits update both, including published references, after showing affected Programs within coordinator access.
+- Deny unauthorized definition selection or edits and avoid exposing inaccessible Program details through reference queries.
 
 **Files and proof:** `src/domain/participants.ts`, `src/api/participants.ts`, `web/src/participants/`, `test/participants.test.ts`, `e2e/participant-reuse.spec.ts`.
-**Dependencies:** U6; Q5 before introducing shared definitions across Programs.
+**Dependencies:** U6. Q5 settles shared definitions; Event access is added by U8.
 
 ### 8. U8 — Group complete Programs under an optional Event
 
@@ -336,28 +355,40 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 - Toggle date grouping, edit a Program's date, and verify derived grouping after reload. Flat ordering remains available.
 - Unlink a Program and keep it independently readable under its existing publication rules; reject a simultaneous second Event link.
 - Reader Event pages omit Draft titles/content, while the authorized coordinator can open Drafts. Publishing one Program leaves the others unchanged.
+- An Event coordinator can read and manage every linked Program, including Drafts, without individual Program grants.
+- A different identity gains no coordinator access. Linking/unlinking checks authority for the Program and Event; unlinking retains the Program's own coordinator.
+- Anyone with an Event link can open its Published Programs without signing in; Draft details remain unavailable through every reader route.
+- The dev seed reads the coordinator issuer/subject from existing environment configuration and assigns that identity to every demo Program and Event.
+  Verify the configured test user manages all demo Programs without another role or setup; repeated seeds preserve feedback and coordinator edits.
 
 **Files and proof:** `src/api/events.ts`, `web/src/events/`, `src/demo/`, `test/events.test.ts`, `e2e/event-grouping.spec.ts`.
-**Dependencies:** U7 and U4's reader policy; Q1 before sharing Event coordination beyond the dev tester.
+**Dependencies:** U7 and U4. Apply the settled Event-wide coordinator and anonymous Published reader policies.
 
-### 9. U9 — Move Parts within a Program or its Event
+### 9. U9 — Move or copy Parts within a Program or its Event
 
-**Goal and outcome:** The coordinator relocates an assignment quickly while keeping the activity itself in place.
+**Goal and outcome:** The coordinator relocates or copies an assignment while preserving activities and every existing destination Part.
 
-**In:** Choose a Part, choose a destination Item/block/Footer entry, preview context, confirm, and atomically relocate its assignment and extra info.
-Permit internal moves and moves between Programs linked to the same Event; verify permissions on both sides.
-**Out:** Cross-Event moves, moves between standalone Programs, and copying or moving the activity itself.
+**In:** Choose one Part and a destination Item/block/Footer entry, preview existing Parts, confirm, and atomically move or copy its value and extra info.
+Permit internal operations and operations between Programs linked to the same Event; verify permissions on both sides.
+Copies offer `Copy without Participant` and `Copy everything`.
+**Out:** Cross-Event moves or copies, operations between standalone Programs, and copying or moving the activity itself.
 
 **Acceptance and tests:**
 
-- Move within nested content and between two Programs linked to `Sabbath`; source assignment clears and target receives the same value/extra info.
+- Move within nested content and between two Programs linked to `Sabbath`; only the selected source Part clears and the target receives its value/extra info.
 - Keep Item labels, Detail, ordering, and Participant descriptive fields unchanged.
 - Reject `Sabbath → Example Conference`, standalone-to-other-Program, unauthorized, and stale destination requests without changing either side.
-- Apply the selected occupied-target policy from Q3 and Participant reference policy from Q5, including cancellation and failed-transaction cases.
+- Move onto assigned or extra-info-only destinations: retain every existing Part and append the moved Part in parallel, without replacement or merging.
+- Render all parallel Parts in editor, preview, reader, and print; select each independently so the coordinator can move another Part elsewhere.
+- Move a Participant reference across Programs and retain the same definition and display mode, without duplicating or deleting that definition.
+- `Copy everything` retains the assignment, extra info, and shared reference; the source stays intact and later definition edits reach both references.
+- `Copy without Participant` retains Part extra info and explicit role placeholders, clearing references, direct names, group text, and person details.
+  Do not infer a role from free text. Retain a referenced role as a standalone role; it counts as unassigned.
+- Both copy options preserve occupied destinations as parallel Parts. Cancellation or failed transactions change neither side.
 - Keyboard selection offers the same destinations as pointer interaction; Draft restrictions remain enforced when choosing destinations.
 
 **Files and proof:** `src/domain/move-part.ts`, `src/api/parts.ts`, `web/src/parts/`, `test/move-part.test.ts`, `e2e/move-parts.spec.ts`.
-**Dependencies:** U8; Q3 and Q5. Move boundaries are already settled by R6.
+**Dependencies:** U8. Q3 and Q5 settle parallel destinations and shared references; R6 supplies the same boundaries for moves and copies.
 
 ### 10. U10 — Review Parts awaiting a named assignment
 
@@ -372,6 +403,7 @@ Permit internal moves and moves between Programs linked to the same Event; verif
 - Include role references whose Participant lacks a name; assigning a name removes them from the unassigned result.
 - Keep free text such as `Congregation` valid. Do not infer the meaning of `TBA` or split group text into unnamed people.
 - Preserve an unassigned Part's full content when opening and saving it; exclude inaccessible Drafts from any cross-Program query.
+- Classify parallel Parts independently; a named Part at the same spot does not hide an unnamed role or extra-info-only Part.
 
 **Files and proof:** `src/domain/unassigned.ts`, `web/src/assignments/`, `test/unassigned.test.ts`, `e2e/unassigned.spec.ts`.
 **Dependencies:** U7 and U8; extend move-related browser coverage when U9 lands. R7 settles role-only classification.
@@ -386,27 +418,65 @@ Permit internal moves and moves between Programs linked to the same Event; verif
 **Acceptance and tests:**
 
 - List Participants from nested content and Footer roles across `Sabbath`; selecting Divine Worship limits results to that Program.
-- Apply Q4's identity/group handling without losing repeated assignment locations or merging distinct people solely because their names match.
-- Assign, clear, or move a Part and verify the list updates; omit unused Participant definitions from people actually taking Parts.
+- Show `Named Participants`, `Text assignments`, and `Awaiting a name`, following the [Participant list design](concepts.md#participant-list).
+- Group named references by definition, with every assignment location. The same definition across Programs appears once; distinct definitions with equal names remain separate.
+- Preserve direct text and structured names per Part, including repeated identical text. Keep `Congregation` and group strings whole; treat `TBA` as text.
+- Group references to unnamed definitions under `Awaiting a name`; direct unnamed roles stay tied to their Parts. Blank/extra-info-only Parts remain in U10 only.
+- Include all parallel Part locations. Follow first-assignment order using Event Program order, content order, then Footer entries; filtering retains only matching locations.
+- Assign, clear, move, or copy a Part, or edit its shared definition, and verify the list updates; omit unused definitions.
 - Enforce Draft permissions before aggregating. Empty Events and Programs produce useful empty states.
-- Preserve standalone Program usability according to Q4's standalone-list answer.
+- A standalone Program offers the same three groups, source links, and empty states, scoped to its own Parts without requiring an Event.
 
 **Files and proof:** `src/domain/participant-list.ts`, `src/api/participants.ts`, `web/src/participants/`, `test/participant-list.test.ts`, `e2e/event-participants.spec.ts`.
-**Dependencies:** U7 and U8; Q4 and any cross-Program reuse decision from Q5. Event scope and Program filtering are settled by R8.
+**Dependencies:** U7 and U8; extend parallel-Part and copy coverage when U9 lands. Q4–Q5 and R8 settle presentation, identity, and scope.
+
+### 12. U12 — Create a Draft Program from a template
+
+**Goal and outcome:** The coordinator starts a new Program from an available reusable structure and edits it independently.
+
+**In:** A small template picker, creation preview, title/optional date entry, optional Event destination, and one placeholder template fixture.
+Use the settled carry-over rules once T1–T2 are answered; reuse the existing composer and assignment rules.
+**Out:** Recurrence, occurrence generation, copy-forward, template marketplace, and a template-management editor in this slice.
+
+**Acceptance and tests:**
+
+- Select `Example Worship Template`, preview the content to carry over, and create a separate Draft with its own ID and coordinator.
+- Retain the supported nested structure, labels, Detail, Footer, and parallel Parts according to T2.
+  Validate template access, destination coordinator rights, and any Participant references.
+- Require a new title and allow an optional date. Apply the template's settled date/time and Participant carry-over rules visibly in the preview.
+- Create either a standalone Program or one linked to an Event the coordinator may manage. Inherit no publication status or source access grants.
+- Edit the new Program without changing the template or another Program created from it; cancellation and failed creation leave no partial Program.
+- Extend the demo seed with one approved placeholder template while preserving feedback, existing Programs, and coordinator edits.
+
+**Files and proof:** `src/domain/templates.ts`, `src/api/templates.ts`, `web/src/templates/`, `src/demo/`, `test/templates.test.ts`, `e2e/templates.spec.ts`.
+**Dependencies:** U8 and U9, including their earlier structure and Participant dependencies; T1–T2 before implementation.
+
+## Settled product decisions
+
+The captain settled Q1–Q3 and Q5; Q4 delegates the list design to this plan.
+
+| ID | Decision | Affected work |
+| --- | --- | --- |
+| Q1 | An Event coordinator can read and manage every Program in the Event, including Drafts. A standalone Program has its own coordinator. | U2, U4, U8–U11 |
+| Q2 | Anyone can read a Published Program by link without signing in. Event links may list their Published Programs; no discoverable public directory is needed. | U4, U8 |
+| Q3 | An occupied destination keeps all existing Parts and receives the moved Part in parallel. The coordinator decides whether to move another Part. | U6 representation, U9 |
+| Q4 | Use Named Participants grouped by definition, Text assignments per Part, and Awaiting a name for unnamed roles. Retain source locations and offer the same list for standalone Programs. | U11 |
+| Q5 | Share Participant definitions between Programs. Moving or fully copying a reference keeps its identity; offer copying without Participant or copying everything. | U7, U9, U11 |
+
+Q4 groups only explicit shared identities, so matching names cannot merge different people.
+Text assignments preserve names and groups without requiring individual records or parsing a group string.
+`Awaiting a name` keeps role placeholders visible without treating them as named people.
+Every group links back to source Parts, so the coordinator can act on the list.
 
 ## Open product questions
 
-The captain has settled the original move-boundary, role-only classification, and participant-list-scope questions in R6–R8.
-The following questions are newly surfaced and remain unresolved; no default here settles them.
-They block only the named extension or slice, so U1 can proceed.
+Q1–Q5 are settled above and no longer block U2–U11.
+Only these genuine template choices remain for the captain; they block U12, not the earlier slices.
 
 | ID | Question | Affected work |
 | --- | --- | --- |
-| Q1 | Who may coordinate each Program and Event? Does Event coordination grant access to every linked Draft, or are Program permissions separate? | Multi-coordinator access in U2/U4/U8–U11. U1 uses only the explicit dev test-subject grant. |
-| Q2 | May any internal visitor with a published URL read it, or must readers authenticate? Should published Programs appear in discoverable listings? | U4 reader routes and U8 reader Event pages. |
-| Q3 | When a Part's destination already has an assignment or extra info, should moving replace, swap, merge, or refuse? | U9 occupied destinations; no silent overwrite policy. |
-| Q4 | How should the list combine repeated Participants across Programs, free-text names, group text, and unnamed roles? What list should a standalone Program offer? | U11 presentation and identity rules. Whole-Event scope with a Program filter stays settled. |
-| Q5 | Are Participant definitions shared between Programs? When a referenced Part crosses Programs, should both reuse one definition or should the destination receive a copy? | U7 cross-Program reuse, U9 reference moves, and U11 identity aggregation. |
+| T1 | Who supplies templates? May coordinators save a Program as a template, edit templates, and share them across Events or coordinators? | U12 template availability and management boundary; the small creation slice adds no management editor. |
+| T2 | Which Header dates/times, Parts, and extra info carry into a new Program? Should Participant assignments be cleared, optional, or retained as shared references? | U12 creation preview and carry-over rules |
 
 Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.
