@@ -97,28 +97,23 @@ Tests belong in `test/`, frontend component directories, and `e2e/`; these are p
 ### Checked platform conventions and personal-repository differences
 
 The platform supports immutable GHCR deployment through `deploy-app`; it does not build source on the apps host.
-Steward's inspected Dockerfile and workflow demonstrate one application container, self-hosted CI, a registry image, and a `deploy_dev` job.
-The platform's newer generic template instead runs PR checks on GitHub-hosted runners.
-Use that safer PR boundary for this public repository while retaining self-hosted CI for trusted deployment-branch pushes.
+Main pushes build and publish an immutable image from GitHub-hosted runners.
+The main Firstmate deploys each published digest to dev from another host.
+This repository does not deploy to dev or use a repository-scoped deploy runner, repository deployment variables, or a `dev` environment.
 
 | Concern | Program Rundown adaptation |
 | --- | --- |
 | Source | `ryannmicua/program-rundown`, a public personal repository; do not substitute an `adventistasia` owner. |
 | Image | Publish `ghcr.io/ryannmicua/program-rundown:sha-<commit>` and deploy `ghcr.io/ryannmicua/program-rundown@sha256:<digest>`. |
 | Helper allowlist | Commit `stacks/apps/program-rundown/image-repo` containing `ghcr.io/ryannmicua/program-rundown` in dev-platform. The default accepts only the organization namespace. |
-| CI runners | Organization `ci` runners do not automatically serve this personal repository. Arrange a repository-scoped `ci` runner on an approved Docker-capable CI host. |
-| Deploy runner | Register a repository-scoped runner for `https://github.com/ryannmicua/program-rundown` on `its-runner-dev-01`, labelled `deploy-dev`. |
-| Runner selection | Use `[self-hosted, linux, ci]` for trusted build/check jobs and `[self-hosted, linux, deploy-dev]` for deployment. Omit `group: deploy-runners`. |
-| Shared group | The organization group selects organization repositories and explicitly excludes public repositories. `add-repo program-rundown` does not solve this ownership boundary. |
-| Repository variables | Set `DEV_DEPLOY_BRANCH=main` and `DEV_DEPLOY_HOST` to the exact approved apps-host SSH target. Create the `dev` environment in this repository. |
-| Registry permissions | The build job needs `packages: write`; deployment needs `packages: read`. Confirm the package grants this repository's workflow token access. |
+| CI runners | PR checks, image-build proof, and trusted main builds use GitHub-hosted runners. |
+| Deployment | The main Firstmate deploys each published image digest to dev from another host. |
+| Repository deployment configuration | No repository deploy runner, `DEV_DEPLOY_HOST` or `DEV_DEPLOY_BRANCH` variable, or `dev` environment is used. |
+| Registry permissions | The build job needs `packages: write`. Confirm the package grants this repository's workflow token access. |
 | Private runtime settings | Keep OIDC settings, session secrets, coordinator subject mapping, feature flags, and mount paths in the app's host-local environment. Commit examples with placeholders only. |
 
-SSD IT Ops or the platform operator owns runner registration, SSH keys, host provisioning, DNS, and identity configuration.
-The deploy runner needs the forced-command `deploy-app` key and verified host keys through its SSH configuration.
-Keep this repository's runner away from the shared convergence key and other repositories' credentials.
-Untrusted PR code must never run on a runner with deployment credentials: run PR tests and image-build proof on GitHub-hosted runners.
-Only trusted pushes to the configured deploy branch may use the repository's self-hosted build and deploy runners.
+SSD IT Ops or the platform operator owns host provisioning, DNS, and identity configuration.
+The main Firstmate owns deployment credentials and invokes `deploy-app` from another host.
 
 ### Path to the first dev deployment
 
@@ -128,19 +123,19 @@ Only trusted pushes to the configured deploy branch may use the repository's sel
 2. Merge that platform change before installation, then arrange private provisioning through the platform operator.
    Set `APP_IMAGE`, `APP_CONTAINER_PORT=3000`, `APP_HOST_PORT`, and `APP_HEALTH_URL` for the existing stack.
    Follow the current GitOps guide; do not run `scripts/new-app` in the aligned host checkout because it also changes tracked files.
-3. Arrange repository-scoped runners, package access, repository variables, OIDC registration, and the synthetic test user described below.
+3. Arrange package access, OIDC registration, and the synthetic test user described below.
    The proposed app hostname is `program-rundown.dev.in.ssd.org`; verify allocation before publishing links or registering redirect URIs.
 4. Add `.github/workflows/deploy.yml` during U1.
-   PR jobs test and build the container without pushing; trusted `main` pushes test, build once, publish, and pass the resulting digest to `deploy_dev`.
-   Send the short-lived registry token on SSH stdin to `deploy-app`; never put it in command arguments or host files.
+   PR jobs test and build the container without pushing; trusted `main` pushes test, build once, and publish the image tagged `sha-<commit>`.
+   The workflow writes the published digest to its summary and build output for the main Firstmate to deploy from another host.
 5. Converge apps before edge from the reviewed platform revision.
    `deploy-app` updates the existing stack, checks its health URL, and restores the previous digest if health fails.
    Keep schema migrations additive and compatible with the previous image; image rollback does not reverse database changes.
 6. Verify HTTPS routing, sign-in, feedback creation/readback, and database persistence across an app restart.
    Confirm the portal's app link and health entry, then extend the demo as later slices land.
 
-Serialize deployments for this app and avoid cancelling an active migration or deployment.
-Record the deployed commit and digest in the workflow summary.
+The main Firstmate serializes deployments for this app and avoids cancelling an active migration or deployment.
+The workflow summary records the published commit, image tag, and digest.
 Future slices include deployment smoke evidence after merging; CI independently proves their behavior before merge.
 
 ### Portal and synthetic test user
@@ -431,7 +426,7 @@ Each slice must satisfy these gates before completion:
 3. Seeds are repeatable, use placeholders, grant the test user access, and preserve feedback and subsequent edits.
 4. CI proves the production frontend and container build. U1 also tests feedback-disabled behavior, including production refusing activation.
 5. A focused browser journey covers the new outcome at desktop and narrow mobile widths, with keyboard access for changed controls.
-6. The slice completes no-mistakes in its own PR. After merge, the deployment workflow publishes and deploys its exact digest and records health/smoke evidence.
+6. The slice completes no-mistakes in its own PR. After merge, the workflow publishes its image and the main Firstmate deploys that exact digest and records health/smoke evidence.
 
 Use unique temporary directories and ephemeral ports so CI jobs can share a runner safely.
 Stop only test processes started by the current run.
@@ -448,7 +443,7 @@ The concepts changes in this PR apply the captain's subsequent decisions; this p
 - [Platform operator guide](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/deployment/operator-guide.md) and [workflow template](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/deployment/app-workflow-template.yml).
 - [Add an app](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/how-to/add-app.md) and [automated deployment, including personal image overrides](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/how-to/automated-app-deployments.md).
 - [Register a dev app and test credentials](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/how-to/register-dev-app.md), [portal reference](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/reference/dev-portal.md), and [configuration locations](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/reference/configuration.md).
-- [CI runner registration](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/how-to/register-ci-runners.md) and [deploy runner ownership, host, and labels](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/reference/deploy-runner.md).
+- [CI runner registration](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/how-to/register-ci-runners.md).
 - [Platform architecture](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/docs/explanation/platform-architecture.md), [Zitadel stack](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/stacks/zitadel/compose.yaml), and [non-secret portal registry](https://github.com/adventistasia/dev-platform/blob/37924668716ca6bb5080639df708278e43738f79/portal/registry.json).
 - Steward reference files: [Dockerfile](https://github.com/adventistasia/steward-expense-prototype/blob/main/Dockerfile), [deployment workflow](https://github.com/adventistasia/steward-expense-prototype/blob/main/.github/workflows/deploy.yml), and [design and architecture](https://github.com/adventistasia/steward-expense-prototype/blob/main/docs/design-and-architecture.md).
 - [Steward feedback delivery](https://github.com/adventistasia/steward-expense-prototype/pull/20), inspected alongside local `src/feedback.js`, `src/app.js`, and `web/src/feedback/`.
