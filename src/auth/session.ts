@@ -34,7 +34,7 @@ export function sessions(db: DatabaseSync, config: Config) {
       const identity = db.prepare('SELECT * FROM identities WHERE id = ?').get(session.identity_id) as { id: number; issuer: string; subject: string; label: string };
       const coordinator = config.appEnv === 'dev' && identity.issuer === config.testerIssuer && identity.subject === config.testerSubject
         && Boolean(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(identity.id));
-      return { label: identity.label, coordinator };
+      return { id: identity.id, label: identity.label, coordinator };
     },
   };
 }

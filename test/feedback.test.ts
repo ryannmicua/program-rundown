@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fixture } from './support.js';
 import { readConfig } from '../src/config.js';
-import { seedEmptyProduct } from '../src/demo/seed.js';
+import { seedProduct } from '../src/demo/seed.js';
 import { openProduct } from '../src/db/product.js';
 
 const cleanup: (() => Promise<void>)[] = [];
@@ -32,12 +32,12 @@ describe('isolated dev feedback', () => {
     for (const note of ['', '   ', 'x'.repeat(4001)]) expect((await send('/api/feedback', 'POST', { note })).status).toBe(400);
     expect((await fetch(`${f.origin}/api/feedback`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.invalid' }, body: '{"note":"bad"}' })).status).toBe(403);
     const before = readFileSync(f.config.feedbackPath);
-    seedEmptyProduct({ APP_ENV: 'dev', PRODUCT_DB_PATH: f.config.productPath });
+    seedProduct({ APP_ENV: 'dev', PRODUCT_DB_PATH: f.config.productPath, DEV_COORDINATOR_ISSUER: f.config.testerIssuer, DEV_COORDINATOR_SUBJECT: f.config.testerSubject });
     openProduct(f.config.productPath).close();
     expect(readFileSync(f.config.feedbackPath)).toEqual(before);
     await f.restart();
     expect((await (await get(`/api/feedback/${id}`)).json()).feedback.note).toBe('<script>alert(1)</script>');
-    const db = new DatabaseSync(f.config.productPath); expect(db.prepare('PRAGMA foreign_keys').get()).toBeDefined(); expect(db.prepare('SELECT * FROM schema_migrations').all()).toHaveLength(1); db.close();
+    const db = new DatabaseSync(f.config.productPath); expect(db.prepare('PRAGMA foreign_keys').get()).toBeDefined(); expect(db.prepare('SELECT * FROM schema_migrations').all()).toHaveLength(2); db.close();
   });
   it.each([{ appEnv: 'dev', enabled: 'false' }, { appEnv: 'test', enabled: 'true' }, { appEnv: 'production', enabled: 'true' }])('never opens disabled feedback storage: %j', async options => {
     const f = await setup(options);
@@ -54,7 +54,7 @@ describe('isolated dev feedback', () => {
     expect(readConfig({ ...base, APP_ENV: 'production' }).feedbackEnabled).toBe(false);
     expect(readConfig({ ...base, APP_ENV: 'dev' }).feedbackEnabled).toBe(true);
     expect(readConfig({ ...base, APP_ENV: 'dev', FEEDBACK_ENABLED: undefined }).feedbackEnabled).toBe(false);
-    expect(() => seedEmptyProduct({ APP_ENV: 'production' })).toThrow();
+    expect(() => seedProduct({ APP_ENV: 'production' })).toThrow();
     expect(() => readConfig({ ...base, PRODUCT_DB_PATH: '/tmp/same', FEEDBACK_DB_PATH: '/tmp/same' })).toThrow();
   });
 });

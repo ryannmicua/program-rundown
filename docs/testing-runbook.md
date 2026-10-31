@@ -39,7 +39,7 @@ The Playwright journey uses the built frontend, so build before running it after
 Use synthetic data and disposable storage for local QA. Never reset a shared database to clean up a test.
 
 **Setup:** Automated tests create their own synthetic subject and temporary files. Manual OIDC needs operator-supplied registration and mapping.
-U1 demo seed is intentionally empty; run it explicitly. Repeated seeds and migrations must leave feedback unchanged.
+Run the demo seed explicitly with the configured coordinator issuer and subject. Repeated seeds and migrations must leave feedback unchanged.
 
 **Cleanup:** Tests close only servers they started and remove only their temporary database directories.
 Stop only the app/container you started for manual QA. Preserve shared demo records and feedback.
@@ -54,3 +54,52 @@ Stop only the app/container you started for manual QA. Preserve shared demo reco
 - Browser print CSS hides feedback controls.
 
 The automated journey checks process replacement against persistent files. Operator checks must still verify deployed HTTPS, real Zitadel, portal access, and mounted storage.
+
+## U2 standalone Draft Headers
+
+**Last tested:** 2026-10-31. **Tested by:** program-rundown-u2 worker.
+
+**Setup:** Node.js 24, `npm ci`, then `npm run build`. Automated tests use temporary SQLite files and the local OIDC issuer.
+Run the explicit demo seed described in [local setup](local-setup.md) only against the intended dev database.
+
+**How to test:**
+
+1. Sign in as the configured coordinator. Choose **New Program**, enter a title, and save with no date or times.
+2. Open the saved `/programs/<id>` URL after signing out, signing in, and restarting the app against the same database.
+3. Save start-only, end-only, both, and neither. Reload after each change; verify each value independently.
+4. Enter a blank title. Verify the field error and that the saved Header is unchanged.
+5. Open the same Draft in two tabs. Save the second tab, then attempt to save different entries in the first.
+6. Verify the conflict keeps the first tab's entries. Reload the saved Draft, reapply the kept entries, review, and save.
+7. Repeat at desktop and 390px mobile widths. Tab from Title to Date and verify all inputs and buttons work by keyboard.
+8. Run the seed twice before first sign-in. Verify one `Community Gathering` Draft belongs to the configured coordinator.
+9. Edit that Header, seed again, and verify the edit remains. Confirm feedback and unrelated Programs remain unchanged.
+
+**Safe actions:** Automated tests, reads, and responsive inspection against isolated fixtures.
+**Data changes:** Create/edit and seed commands write product data. Use disposable databases for QA; do not reset shared data.
+**Cleanup:** Tests close only their own servers and delete their own temporary directories. Preserve shared demo edits and feedback.
+
+**Verification commands:**
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+docker build -t program-rundown:local .
+git diff --check
+```
+
+**Coverage:** `test/programs.test.ts` checks API validation, owner restrictions, authentication, restart persistence, and unchanged state after rejected edits.
+Its process-replacement test saves through one child server, terminates that process, starts a second server, and reopens the same SQLite record.
+`test/program-seed.test.ts` checks migration from U1, replay, compatibility of identity/session reads, seed ownership, and preservation of later edits.
+`web/src/programs/Programs.test.tsx` checks conflict recovery, the network-failure message, and retained form values.
+`e2e/draft.spec.ts` runs the complete browser journey with the real API at desktop and mobile widths.
+
+**Gotchas:**
+
+- The browser journey serves `web/dist`; rebuild after changing frontend source.
+- Browser date/time controls normalize input, so malformed calendar/time values are tested directly through the API.
+- PATCH needs the version from the last read Header. A stale version returns 409; no Header field changes.
+- Same-origin JSON requires `Origin` matching `APP_ORIGIN`. Native browser fetch supplies it for mutations.
+- A previous U1 database migrates on open. Schema changes are additive; identity/session tables remain readable by U1.
+- No lint script exists in the project. Typechecking and `git diff --check` accompany the tests and build.

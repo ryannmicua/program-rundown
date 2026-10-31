@@ -1,4 +1,4 @@
-# How to run the U1 shell
+# How to run Program Rundown
 
 Use Node.js 24 and npm. The same Express process serves the JSON API and the built React application on port 3000.
 
@@ -27,7 +27,7 @@ HTTP is accepted only for loopback development/testing. OIDC HTTP transport is l
 Sessions and short-lived PKCE transactions stay in the product database; logout deletes the current session.
 Keep `SESSION_SECRET` private and stable across container replacement. Replacing it invalidates existing cookies.
 
-## Initialize the U1 demo
+## Initialize the demo
 
 Run explicitly in dev:
 
@@ -35,10 +35,37 @@ Run explicitly in dev:
 node --env-file=.env dist/demo/seed.js
 ```
 
-For source development, use `APP_ENV=dev PRODUCT_DB_PATH=./data/program-rundown.sqlite npm run seed`.
-U1 intentionally seeds an empty product collection. There are no Programs, Events, or Participants yet.
-The command applies ordered product migrations and preserves existing data, identity mappings, sessions, and feedback.
+For source development, export the same environment configuration and run `npm run seed`.
+The seed requires `APP_ENV=dev`, `DEV_COORDINATOR_ISSUER`, and `DEV_COORDINATOR_SUBJECT`.
+It creates the standalone `Community Gathering` Draft Header, with no date, a 09:00 start, and a 12:00 end.
+There are no Events, Sections, or Participants yet.
+The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
+Repeating the seed preserves edited Headers, unrelated Programs, sessions, identity mappings, and feedback.
+If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs only.
 Startup applies additive product migrations; startup and deployment never reset or seed data.
+
+## Create and reopen a Draft
+
+Sign in as the configured coordinator and choose **New Program**. Enter a title and choose **Save Draft**.
+Date, start time, and end time are independently optional. Times use local clock values; the app does not infer a duration.
+Open a saved Program from **Your Programs** or its `/programs/<id>` URL. Its Header survives sign-out and app restart.
+Standalone Draft access belongs to its creating coordinator; another identity cannot list, read, or edit it.
+Event coordination will grant access to linked Programs when Events arrive in U8.
+
+If another tab saves first, the editor keeps your entries and reports a conflict.
+Choose **Reload saved Draft** to see the latest Header. Your unsaved entries remain visible.
+Choose **Reapply my entries**, review the Header, then **Save Draft** to save against the latest version.
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/programs` | List the signed-in coordinator's standalone Programs. |
+| `POST /api/programs` | Create a Draft with `title` and optional `date`, `startTime`, and `endTime`. |
+| `GET /api/programs/:id` | Read an owned Draft Header and its `version`. |
+| `PATCH /api/programs/:id` | Edit Header fields with the last read `version`; stale versions return 409 without writing. |
+
+Dates use `YYYY-MM-DD`; times use `HH:MM`. Use `null` or an empty string to clear an optional field.
+Omitted edit fields retain their values. Blank titles, invalid calendar dates, and malformed times return 400 with field errors.
+Unauthenticated requests return 401. Unconfigured identities return 403; inaccessible or missing Programs return 404 for a coordinator.
 
 ## Run the container
 
