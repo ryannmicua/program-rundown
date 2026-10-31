@@ -60,6 +60,9 @@ Two audiences use a Program in different ways.
   Example: an attendee holding the sheet, or someone viewing it on a phone.
 
 A person can be both: a coordinator also reads the published Program on the day.
+A coordinator of an Event can read and manage every Program in that Event, including Drafts.
+A standalone Program has its own coordinator.
+Signing in identifies the coordinator; a Participant or Footer coordinator credit does not grant access.
 Note that "Congregation" also appears inside the sample Program as a Part value (the people who sing a hymn).
 Those people are [Participants](#participant) because they have a Part, even when they are also Readers.
 
@@ -71,12 +74,18 @@ Coordinators need to:
 2. **Easily move Parts around.**
    Relocate a Part assignment; the Part identifies who does an activity or leads a block, while the Item identifies the activity.
    A Part may move within its Program or between Programs linked to the same Event, never across Events.
+   Moving to an occupied spot adds a parallel Part there; the existing Part stays intact.
+   The coordinator decides whether to move either Part elsewhere.
 3. **See which Parts have no assignment yet.**
    A blank Part has no assignment, even if it has Part extra info.
    Role-only Parts without a named holder also count as unassigned.
 4. **Get a list of Participants.**
    Use [Participant](#participant) for the people taking Parts, including people represented by group text.
    The list covers the whole Event and can be filtered to one Program.
+   A standalone Program offers the same list for its own Parts.
+5. **Copy Parts and reuse templates.**
+   Copy a Part without its Participant or copy everything, as defined under [Part](#part).
+   Create a new Program from a [Program template](#program-template).
 
 ### Draft and Published
 
@@ -85,6 +94,9 @@ A Program has a **status**.
 - **Draft**: a working document the coordinator has not released as the published listing.
   Coordinators may read a Draft.
 - **Published**: the coordinator has released it to readers, for printing or sharing.
+  Anyone with its link can read it without signing in.
+  Published Programs have no discoverable public directory; readers reach them through shared links.
+  A shared Event link may list that Event's published Programs, while omitting its Drafts.
 
 Example: on Wednesday the coordinator drafts Saturday's Program with "Speaker: TBA".
 On Friday the coordinator fills in the speaker and publishes it.
@@ -248,7 +260,7 @@ Event: Example Conference (optional dates supplied: July 28–August 1)
     7. Program: Sabbath Afternoon Program
          Header: SABBATH AFTERNOON PROGRAM; date Saturday, August 1
 
-Participant defined once in Day 1: role Speaker; name Alex Placeholder;
+Participant shared by Day 1 and Day 2: role Speaker; name Alex Placeholder;
   position Education Director; organization Example Conference
 Keynote Message's Part displays: Alex Placeholder
 ```
@@ -401,6 +413,8 @@ Here, Part names the assignment; Item names the activity.
 A Part is optional and need not identify a person.
 Its value may be blank, free text, a role, a structured object with a role and an optional name, or a Participant reference.
 A Part can reference a Participant by name or by role, using the Participant defined once for reuse.
+An Item, block, or Footer entry can hold several parallel Parts at the same spot.
+Each Part keeps its own value and extra info; parallel Parts do not create another activity or imply a sequence.
 
 | Kind | Meaning | Example |
 |---|---|---|
@@ -431,6 +445,24 @@ Part extra info alone does not assign anyone.
 Role-only values remain valid and count as unassigned when they have no named holder.
 This includes a standalone role, a structured role without a name, or a role reference to a Participant without a name.
 
+Moving a Part relocates its value and extra info and clears only that source Part.
+An occupied destination keeps every existing Part, including extra-info-only Parts, and receives the moved Part alongside them.
+Nothing is replaced, swapped, or combined.
+Preview, published reading, and print show all parallel Parts at that spot.
+The coordinator can select and move each Part separately.
+
+Copying a Part uses the same destination boundaries as moving: within its Program or between Programs in the same Event.
+The source stays intact, and an occupied destination retains its Parts.
+The coordinator chooses one of two options:
+
+- **Copy without Participant:** copy Part extra info and any explicit role placeholder, clearing the Participant reference and person or group assignment.
+  Clear direct names and free-text assignments too; do not guess a role from text.
+  Retain a referenced Participant's role as a standalone role, without copying the person's descriptive fields.
+- **Copy everything:** copy the value, display mode, and Part extra info.
+  A Participant reference continues to use the same shared definition; it does not create another person.
+
+Both options copy the assignment only; Item labels, Detail, content order, and activities stay in place.
+
 ### Participant
 
 A **Participant** is a person who has a Part in the Program.
@@ -439,6 +471,12 @@ A Part may still contain group text such as `Congregation`; the people taking th
 It does not need to list their names.
 The same participant can appear many times: in Items, in Sections, and in the Footer.
 A Participant is defined once and referenced by Parts by name or by role, so repeated assignments reuse the same participant details.
+Participant definitions can be shared between Programs, including standalone Programs the coordinator may manage.
+Reusing a definition is an explicit choice; matching names or roles never establishes identity.
+Moving or fully copying a referenced Part between permitted Programs keeps the same definition.
+Editing a shared definition updates all its references, including references in Published Programs.
+Before saving, show the coordinator which Programs will be affected, within their access.
+Definition selection and reuse must respect coordinator access; sharing adds no public Participant directory or Draft access.
 
 A Participant definition can carry:
 
@@ -456,6 +494,43 @@ Example: `Morgan Pianist` performs `Offertory Music` and is also credited as `Pi
 A participant may carry an **honorific** and a **subtitle**, such as those shown in the Section labeled `featured`.
 Example: honorific `Dr.`, subtitle `Education Director, Example Conference`.
 The subtitle may combine position and organization; those details describe the person rather than the part's title, topic, name, or description.
+
+### Participant list
+
+The **Participant list** helps a coordinator see who is taking Parts and where each assignment appears.
+An Event list covers its linked Programs, with a filter for one Program.
+A standalone Program offers the same list for its own content, including nested blocks and Footer roles.
+Only assignments in Programs the coordinator may access contribute to the list.
+
+| Group | What appears | How repeated assignments appear |
+|---|---|---|
+| Named Participants | Named, referenced Participant definitions, with role and optional descriptive fields | One entry per definition, with every Program and Part location beneath it |
+| Text assignments | Free-text values and direct structured names, including `Jamie Example`, `Congregation`, and `Pat Example and Lee Example` | One entry per source Part, labelled as text; preserve the complete value |
+| Awaiting a name | Standalone roles, structured roles without names, and references to unnamed Participants | Group references by definition; keep direct roles tied to their source Parts |
+
+Each entry links to its source Parts, including parallel Parts.
+List entries follow their first assignment in Event Program order, then content order, with Footer entries last.
+The Program filter keeps only matching assignments and their locations.
+Unused definitions and blank or extra-info-only Parts do not appear; the unassigned-Part review still covers those Parts.
+Treat `TBA` as text, without guessing whether it names a person.
+
+This design groups only identities the coordinator explicitly chose to share.
+It keeps every assignment traceable and avoids merging different people with the same name.
+Group text stays useful without requiring a directory of individuals.
+An unnamed role stays visible as work awaiting a name, without counting it as a named person.
+
+### Program template
+
+A **Program template** is a reusable starting structure for a new Program.
+It can describe the Header, Sections, mini-programs, Items, Parts, and Footer needed for a recurring kind of listing.
+Example: `Example Worship Template` supplies the structure for a new `Divine Worship` Program.
+A coordinator selects an available template and creates a separate Draft, then supplies the new Program's title and optional date.
+The new Program has its own coordinator access and optional Event link; it never inherits publication status or access grants from a source Program.
+Changes to the new Program do not alter the template or other Programs created from it.
+A template is not a published Program, a mini-program, a recurrence rule, or a copy-forward operation on last week's Programs.
+
+The small first slice covers creating a Program from an available template.
+Who supplies and manages templates, and which dates, times, Parts, and Participant details carry over, remain [open template questions](#open-template-questions).
 
 ### Role
 
@@ -531,9 +606,11 @@ These details in the sample affect the model and are easy to miss.
 
 A coordinator composes a Draft and publishes it for readers.
 Coordinators may read a Draft before publication.
+An Event coordinator has access to every linked Program; a standalone Program uses its own coordinator.
 Publication status describes whether the listing has been released.
 For example, a coordinator may prepare a Draft on Wednesday and release the completed listing on Friday.
 Later edits replace the published Program, so readers receive the current listing.
+Anyone with the published link can read and print it without signing in.
 There is no version history or new published version per edit.
 
 ## 6. Glossary
@@ -541,10 +618,11 @@ There is no version history or new published version per edit.
 | Term | Definition | Example |
 |---|---|---|
 | Program | A complete, standalone document listing a day or session's flow and who does each part; optionally linked to at most one Event | The "Divine Service" sheet |
+| Program template | A reusable starting structure from which a coordinator creates a separate Draft Program | `Example Worship Template` |
 | Event | An optional, lightweight organizing record with a name, optional dates, and an ordered list of linked Programs, optionally grouped by their dates; no event logistics | `Example Conference`, July 28–August 1; `Sabbath`, grouping Programs by date |
 | Event link | An optional, direct association between a Program and at most one Event | `Sabbath Morning Program` linked to `Example Conference`; Divine Worship linked to `Sabbath` |
-| Coordinator | A person who composes and publishes a Program, may read it as a Draft, manages and moves Parts, sees unassigned Parts, and gets a Participant list | A program coordinator |
-| Reader | A person who follows a published Program | An attendee holding the sheet |
+| Coordinator | A person who manages every Program in their Event, or their own standalone Program, including Drafts, Parts, and Participant lists | A program coordinator |
+| Reader | Anyone who follows a published Program by link, without signing in | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
 | Draft | A working Program that Coordinators may read before publication | Wednesday's unfinished Saturday listing |
 | Header | The identifying block of a Program or mini-program: title, optional start, optional end, optional date | `DIVINE SERVICE`, `10:30 a.m.` |
@@ -557,10 +635,11 @@ There is no version history or new published version per edit.
 | Item label | What happens in an Item; any leading symbols are ordinary text | `Offertory Prayer`, `*Introit` |
 | Detail | Optional free text for an Item | `"Holy, Holy, Holy"`, `Psalm 100:1–5` |
 | Part | The optional assignment of who does an Item or leads a block; accepts blank, text, role, role with optional name, or a Participant reference | Role reference `Speaker` displays the Participant's name when available, otherwise `Speaker` |
+| Parallel Parts | Separate Parts at the same Item, block, or Footer spot, each retaining its value and extra info | Moving a second assignment onto `Prayer` keeps both |
 | Unassigned Part | A blank or omitted Part value, even with Part extra info, or a role-only value without a named holder | An empty Part on `Prayer`; role `Speaker` without a named holder |
 | Part extra info | Optional title, topic, name, or description of the part being performed | Sermon title `A Life of Service`; description `Venue: Example Hall` |
-| Participant | A person defined once for reuse by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
-| Participant list | A coordinator's list of people taking Parts across an Event, filterable to one Program, using the existing Participant definition | `Jamie Example`, who performs `Scripture Reading` and `Pastoral Prayer` |
+| Participant | A person defined once for reuse across Programs by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
+| Participant list | A coordinator's list of named Participants, text assignments, and roles awaiting a name, with source locations; Event-wide with a Program filter, or standalone | A shared `Jamie Example` definition with reading and prayer locations |
 | Participant reference | A Part identifies a defined Participant by name or by role | Name `Alex Placeholder` or role `Speaker` |
 | Position | A Participant's optional position | `Education Director` |
 | Organization | A Participant's optional organization | `Example Conference` |
@@ -607,7 +686,9 @@ The earlier decisions remain in place, with the additional decisions below.
 9. **Publication.**
    Later edits replace the published Program; there is no version history or new version per edit.
 10. **Draft readership.**
-    Coordinators may read a Draft.
+    Event coordinators can read and manage every linked Program, including Drafts (Q1).
+    Standalone Programs have their own coordinator.
+    Anyone can read a Published Program by link without signing in (Q2); there is no discoverable public directory.
 11. **Multi-day listings.**
     Use separate, complete Programs for each day or session, each able to stand alone.
     Several Programs may share a day, such as Sabbath Morning and Sabbath Afternoon Programs.
@@ -618,7 +699,7 @@ The earlier decisions remain in place, with the additional decisions below.
     A Part may optionally include a title, topic, name, or description of the part being performed, including a venue description.
     Item Detail remains free text and stays available.
 13. **Participant extra info and reuse.**
-    Define Participants once and reference them from Parts by name or by role.
+    Define Participants once and share definitions between Programs, referencing them from Parts by name or by role (Q5).
     A Participant can carry a role and optional name, position, and organization, alongside the existing honorific and subtitle.
 14. **Programs under an Event, optionally grouped by date.**
     An Event remains a lightweight organizing record with a name, optional dates, and an ordered list of linked Programs.
@@ -641,6 +722,26 @@ The earlier decisions remain in place, with the additional decisions below.
 18. **Participant list scope.**
     The list covers the whole Event and can be filtered to one Program.
     The Event-wide list uses its linked Programs, optionally grouped by their dates; it does not introduce occurrences.
+    Standalone Programs offer their own list (Q4).
+    Group named references by definition, preserve direct text per Part, and show unnamed roles under `Awaiting a name`.
+    Every entry retains its assignment locations; names alone never merge identities.
+19. **Occupied destinations and Part copies.**
+    Moving onto an occupied spot preserves every Part there as parallel Parts (Q3).
+    The coordinator decides whether to move an existing Part elsewhere.
+    Copies leave the source intact and offer `Copy without Participant` or `Copy everything` (Q5).
+    A full copy retains the shared Participant reference; a copy without Participant clears person or group assignments and retains explicit role placeholders.
+20. **Program templates.**
+    A coordinator can create a separate Draft Program from an available reusable template.
+    Template management and carry-over choices remain open below; recurrence and copy-forward stay deferred.
+
+### Open template questions
+
+Q1–Q5 are settled above; only these new template choices remain for the captain.
+
+| ID | Question | Affected work |
+|---|---|---|
+| T1 | Who supplies templates? May coordinators save a Program as a template, edit templates, and share them across Events or coordinators? | U12 template availability and management boundary |
+| T2 | Which Header dates/times, Parts, and extra info carry into a new Program? Should Participant assignments be cleared, optional, or retained as shared references? | U12 creation preview and carry-over rules |
 
 ### Deferred capabilities
 
