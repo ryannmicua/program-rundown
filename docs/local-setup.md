@@ -63,7 +63,6 @@ Choose **Reapply my entries**, review the Header, then **Save Draft** to save ag
 | `POST /api/programs` | Create a Draft with `title` and optional `date`, `startTime`, and `endTime`. |
 | `GET /api/programs/:id` | Read an owned Draft Header, its `version`, and ordered content `nodes`. |
 | `PATCH /api/programs/:id` | Edit Header fields with the last read `version`; stale versions return 409 without writing. |
-| `GET /api/programs/:id/content` | Read the owned Draft Header, revision, and content nodes. |
 | `PUT /api/programs/:id/content` | Save `{version, nodes}` atomically; stale versions return 409 without changing content. |
 
 Dates use `YYYY-MM-DD`; times use `HH:MM`. Use `null` or an empty string to clear an optional field.
@@ -80,10 +79,11 @@ Choose **Save rundown** to persist additions, edits, removals, and order togethe
 The preview follows the current entries. Wrapped lines and line breaks remain within the same Item.
 
 Header and content saves share a revision. Conflicts preserve rundown entries and offer **Reload saved rundown** and **Reapply my rundown entries**.
-Reload replaces the current Header and rundown with saved values; review kept entries before saving again.
+Reload replaces the current Header and rundown with saved values. Unsaved Header or rundown entries stay visible to reapply; review them before saving again.
 Content nodes have stable `id`, `parentId`, `kind`, `label`, `detail`, `startTime`, and `endTime` fields.
 Sections have `kind: "section"`, `parentId: null`, and empty Detail. Items require a label and their Section's ID as `parentId`.
 Array order determines sibling order. Content times use `HH:MM` or `null`.
+A rundown holds up to 300 nodes; labels hold up to 200 characters, Item Detail up to 10000, and all labels and Detail together up to 60000.
 
 ## Run the container
 

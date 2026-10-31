@@ -17,11 +17,6 @@ export function contentRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/programs/:id/content', coordinator);
   const find = (id: number, owner: number) => db.prepare('SELECT id, title, date, start_time AS startTime, end_time AS endTime, status, version FROM programs WHERE id = ? AND owner_id = ?').get(id, owner) as Program | undefined;
-  router.get('/api/programs/:id/content', (req, res) => {
-    const program = find(Number(req.params.id), res.locals.user.id);
-    if (!program) return res.status(404).json({ error: 'Program not found.' });
-    res.json({ program, nodes: readContent(db, program.id) });
-  });
   router.put('/api/programs/:id/content', (req, res) => {
     const program = find(Number(req.params.id), res.locals.user.id);
     if (!program) return res.status(404).json({ error: 'Program not found.' });

@@ -69,3 +69,29 @@ it('shows loading, empty, and access-denied states for the Program list', async 
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('Dev tester access required.'));
   expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
 });
+
+it('keeps the other form\'s unsaved entries when one form reloads after a conflict', async () => {
+  history.replaceState({}, '', '/programs/1');
+  const program = { id: 1, title: 'Original Gathering', date: null, startTime: null, endTime: null, status: 'Draft', version: 1 };
+  const section = { id: 'opening', parentId: null, kind: 'section', label: 'Opening', detail: '', startTime: null, endTime: null };
+  const conflict = { ok: false, status: 409, json: async () => ({ error: 'This Draft changed.' }) };
+  const latest = { ok: true, json: async () => ({ program: { ...program, version: 2 }, nodes: [section] }) };
+  vi.stubGlobal('fetch', vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program, nodes: [section] }) })
+    .mockResolvedValueOnce(conflict).mockResolvedValueOnce(latest)
+    .mockResolvedValueOnce(conflict).mockResolvedValueOnce(latest));
+  render(<Programs />);
+  await screen.findByDisplayValue('Original Gathering');
+  fireEvent.change(screen.getByLabelText('Section heading (optional)'), { target: { value: 'Unsaved heading' } });
+  fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Reload saved Draft' }));
+  await screen.findByRole('button', { name: 'Reapply my rundown entries' });
+  expect(screen.getByText(/Section: Unsaved heading/)).toBeDefined();
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Unsaved title' } });
+  fireEvent.change(screen.getByLabelText('Section heading (optional)'), { target: { value: 'Second heading' } });
+  fireEvent.submit(screen.getByRole('form', { name: 'Rundown' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Reload saved rundown' }));
+  await screen.findByRole('button', { name: 'Reapply my entries' });
+  expect(screen.getByText('Unsaved title')).toBeDefined();
+  expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Original Gathering');
+});

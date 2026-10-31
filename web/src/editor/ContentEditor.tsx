@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { moveSibling, type ContentNode } from '../../../src/domain/content.js';
+import { contentLimits, moveSibling, type ContentNode } from '../../../src/domain/content.js';
 import type { Program } from '../../../src/domain/programs.js';
 import { Rundown } from './Rundown.js';
 
@@ -13,7 +13,7 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
-  useEffect(() => { setNodes(initialNodes); setConflict(false); setError(''); setMessage(''); setDirty(false); }, [initialNodes]);
+  useEffect(() => { if (dirty) setKept(nodes); setNodes(initialNodes); setConflict(false); setError(''); setMessage(''); setDirty(false); }, [initialNodes]);
 
   function change(next: ContentNode[]) { setNodes(next); setDirty(true); setMessage(''); }
   function add(kind: ContentNode['kind'], parentId: string | null) {
@@ -48,8 +48,8 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
   function fields(node: ContentNode) {
     return <div className="header-fields">
       <div className="title-field"><label htmlFor={`${node.id}-label`}>{node.kind === 'section' ? 'Section heading (optional)' : 'Item label'}</label>
-        <input id={`${node.id}-label`} maxLength={200} required={node.kind === 'item'} value={node.label} onChange={event => edit(node.id, { label: event.target.value })}/></div>
-      {node.kind === 'item' && <div className="title-field"><label htmlFor={`${node.id}-detail`}>Detail (optional)</label><textarea id={`${node.id}-detail`} maxLength={10000} value={node.detail} onChange={event => edit(node.id, { detail: event.target.value })}/></div>}
+        <input id={`${node.id}-label`} maxLength={contentLimits.label} required={node.kind === 'item'} value={node.label} onChange={event => edit(node.id, { label: event.target.value })}/></div>
+      {node.kind === 'item' && <div className="title-field"><label htmlFor={`${node.id}-detail`}>Detail (optional)</label><textarea id={`${node.id}-detail`} maxLength={contentLimits.detail} value={node.detail} onChange={event => edit(node.id, { detail: event.target.value })}/></div>}
       {(['startTime', 'endTime'] as const).map(key => <div key={key}><label htmlFor={`${node.id}-${key}`}>{key === 'startTime' ? 'Start time' : 'End time'} (optional)</label><input id={`${node.id}-${key}`} type="time" value={node[key] || ''} onChange={event => edit(node.id, { [key]: event.target.value || null })}/></div>)}
     </div>;
   }

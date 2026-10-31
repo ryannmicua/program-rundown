@@ -34,8 +34,10 @@ export function Programs() {
       const response = await fetch(id ? `/api/programs/${id}` : '/api/programs');
       const data = await response.json();
       if (!response.ok) { setError(data.error || 'Could not load your Programs. Try again.'); return; }
-      if (id) { setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []); }
-      else setPrograms(data.programs);
+      if (id) {
+        if (saved && (['title', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key])) setKept({ ...header });
+        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []);
+      } else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
     } catch { setError('Could not connect. Try again.'); }
     finally { setBusy(false); }
