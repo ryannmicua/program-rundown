@@ -5,6 +5,8 @@ test('dev shell: anonymous page note, PKCE sign-in, readback, picking, persisten
   const browserErrors: string[] = [];
   page.on('pageerror', error => browserErrors.push(error.message));
   try {
+    await page.goto(`${app.origin}/feedback`);
+    await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
     await page.goto(`${app.origin}/signin`);
     await page.getByRole('button', { name: 'Feedback', exact: true }).click();
     await page.getByRole('link', { name: 'Sign in', exact: true }).click();

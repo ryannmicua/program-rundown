@@ -39,7 +39,7 @@ export async function createApp(config: Config) {
     const { feedbackModule } = await import('./feedback/index.js');
     feedback = feedbackModule(config.feedbackPath, tester);
     app.use((feedback as ReturnType<typeof feedbackModule>).router);
-    app.get('/feedback', tester, (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
+    app.get('/feedback', (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
   }
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
   app.use(express.static(resolve('web/dist'), { index: false }));

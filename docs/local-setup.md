@@ -20,7 +20,7 @@ No client secret or token is sent to the browser. The maintained [openid-client 
 
 Set `DEV_COORDINATOR_ISSUER` and `DEV_COORDINATOR_SUBJECT` to the synthetic tester's exact issuer and subject.
 Only that identity receives the dev coordinator grant. Other signed-in identities cannot read product data or feedback.
-The shell uses a fixed `Dev tester` label rather than copying real identity details into demo records.
+The shell labels the mapped tester `Dev tester` and every other identity `Signed-in user`, rather than copying real identity details into demo records.
 
 Use an HTTPS `APP_ORIGIN` in deployments. Cookies are Secure, HttpOnly, SameSite=Lax, signed, and host-only.
 HTTP is accepted only for loopback development/testing. OIDC HTTP transport is likewise restricted to a local mock issuer.

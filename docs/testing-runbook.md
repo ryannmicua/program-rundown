@@ -46,7 +46,7 @@ Stop only the app/container you started for manual QA. Preserve shared demo reco
 
 **Gotchas:**
 
-- `.treehouse` is a hidden directory. Serve `index.html` relative to an explicit static root to avoid Express dotfile filtering.
+- Serve `index.html` relative to an explicit static root. Express `sendFile` rejects absolute paths that pass through a hidden (dot) directory.
 - Sign-in rotates cookies. API test clients must use the final `Set-Cookie` header, after the old cookie is cleared.
 - Production cookies require HTTPS. Automated browser tests use the permitted loopback HTTP mode; a separate server test checks secure cookie attributes.
 - Same-origin JSON mutations require the exact `Origin` matching `APP_ORIGIN`.

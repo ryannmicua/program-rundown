@@ -44,7 +44,7 @@ export function feedbackModule(path: string, tester: RequestHandler) {
       box: dimensions(raw.box, ['x', 'y', 'width', 'height']),
     } : null;
     const result = db.prepare('INSERT INTO feedback (created_at, route, reporter, note, element, viewport) VALUES (?, ?, ?, ?, ?, ?)').run(
-      new Date().toISOString(), safeRoute(body.route ?? body.url), res.locals.user?.label ?? null, body.note.trim(),
+      new Date().toISOString(), safeRoute(body.route), res.locals.user?.label ?? null, body.note.trim(),
       element ? JSON.stringify(element) : null, JSON.stringify(dimensions(body.viewport, ['width', 'height'])),
     );
     // Anonymous writers receive only the receipt, never readback.

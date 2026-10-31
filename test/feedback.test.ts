@@ -14,7 +14,7 @@ describe('isolated dev feedback', () => {
     const f = await setup();
     const send = (path: string, method: string, body: unknown, cookie = '') => fetch(`${f.origin}${path}`, { method, headers: { origin: f.origin, 'content-type': 'application/json', cookie }, body: JSON.stringify(body) });
     expect((await fetch(`${f.origin}/health`)).status).toBe(200);
-    const response = await send('/api/feedback', 'POST', { note: '<script>alert(1)</script>', url: 'https://user:password@example.invalid/auth/callback?code=secret#token', title: 'token=secret', element: { selector: 'body > a', tag: 'a', text: 'token=secret https://example.invalid?password=secret', box: { x: 1, y: 2, width: 3, height: 4 } }, viewport: { width: 800, height: 600 } });
+    const response = await send('/api/feedback', 'POST', { note: '<script>alert(1)</script>', route: 'https://user:password@example.invalid/auth/callback?code=secret#token', title: 'token=secret', element: { selector: 'body > a', tag: 'a', text: 'token=secret https://example.invalid?password=secret', box: { x: 1, y: 2, width: 3, height: 4 } }, viewport: { width: 800, height: 600 } });
     expect(response.status).toBe(201);
     const { id } = await response.json();
     expect((await fetch(`${f.origin}/api/feedback`)).status).toBe(401);

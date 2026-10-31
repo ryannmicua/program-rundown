@@ -16,10 +16,11 @@ it('verifies real OIDC code exchange, rejects forged state and replay, grants on
     expect((await fetch(bad, { headers: { cookie }, redirect: 'manual' })).status).toBe(400);
     expect((await fetch(callback, { headers: { cookie }, redirect: 'manual' })).status).toBe(400);
     const tester = await f.signIn();
-    expect((await (await fetch(`${f.origin}/api/session`, { headers: { cookie: tester } })).json()).user.coordinator).toBe(true);
+    expect((await (await fetch(`${f.origin}/api/session`, { headers: { cookie: tester } })).json()).user).toEqual({ label: 'Dev tester', coordinator: true });
     expect((await (await fetch(`${f.origin}/api/programs`, { headers: { cookie: tester } })).json()).programs).toEqual([]);
     f.issuer.setSubject('unmapped-placeholder');
     const other = await f.signIn();
+    expect((await (await fetch(`${f.origin}/api/session`, { headers: { cookie: other } })).json()).user).toEqual({ label: 'Signed-in user', coordinator: false });
     expect((await fetch(`${f.origin}/api/feedback`, { headers: { cookie: other } })).status).toBe(403);
     expect((await fetch(`${f.origin}/api/programs`, { headers: { cookie: other } })).status).toBe(403);
     expect((await fetch(`${f.origin}/auth/logout`, { method: 'POST', headers: { cookie: tester, origin: f.origin, 'content-type': 'application/json' }, body: '{}' })).status).toBe(204);

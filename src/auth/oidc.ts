@@ -37,12 +37,13 @@ export function authRoutes(db: DatabaseSync, config: Config, store: ReturnType<t
         pkceCodeVerifier: pending.verifier, expectedState: pending.state, expectedNonce: pending.nonce, idTokenExpected: true,
       });
       const claims = tokens.claims()!;
+      const isTester = config.appEnv === 'dev' && claims.iss === config.testerIssuer && claims.sub === config.testerSubject;
       db.exec('BEGIN IMMEDIATE');
       let id: number;
       try {
-        db.prepare('INSERT INTO identities (issuer, subject, label) VALUES (?, ?, ?) ON CONFLICT(issuer, subject) DO UPDATE SET label=excluded.label').run(claims.iss, claims.sub, 'Dev tester');
+        db.prepare('INSERT INTO identities (issuer, subject, label) VALUES (?, ?, ?) ON CONFLICT(issuer, subject) DO UPDATE SET label=excluded.label').run(claims.iss, claims.sub, isTester ? 'Dev tester' : 'Signed-in user');
         id = (db.prepare('SELECT id FROM identities WHERE issuer = ? AND subject = ?').get(claims.iss, claims.sub) as { id: number }).id;
-        if (config.appEnv === 'dev' && claims.iss === config.testerIssuer && claims.sub === config.testerSubject) db.prepare("INSERT OR IGNORE INTO coordinator_grants VALUES (?, 'dev')").run(id);
+        if (isTester) db.prepare("INSERT OR IGNORE INTO coordinator_grants VALUES (?, 'dev')").run(id);
         db.exec('COMMIT');
       } catch (error) { db.exec('ROLLBACK'); throw error; }
       store.create(req, res, id);
