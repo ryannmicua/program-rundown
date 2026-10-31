@@ -28,7 +28,9 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
       const data = await response.json();
       if (!response.ok) {
         if (response.status === 409) { setConflict(true); setKept(nodes); }
-        setError(data.error || 'Could not save. Your rundown entries are kept.');
+        setError(response.status === 401 ? 'Your session ended. Your rundown entries are kept on this page. Sign in again, then review and save them.'
+          : response.status === 403 ? 'This account cannot edit this Program. Sign out and use the configured coordinator account.'
+            : data.error || 'Could not save. Your rundown entries are kept.');
         return;
       }
       onSaved(data.program); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
@@ -57,7 +59,7 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
   return <section className="card rundown-editor" aria-label="Rundown editor">
     <h2>Rundown</h2>
     <p>Sections group Items, even without a heading. Move buttons work with a pointer or keyboard. Save to keep your changes.</p>
-    {error && <div role="alert"><p>{error}</p>{conflict && <button type="button" disabled={busy} onClick={() => void reload()}>Reload saved rundown</button>}</div>}
+    {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{conflict && <button type="button" disabled={busy} onClick={() => void reload()}>Reload saved rundown</button>}</div>}
     {message && <p role="status">{message}</p>}
     {kept && <aside className="kept-header"><h3>Your unsaved rundown</h3><pre className="note-text">{kept.map(node => `${node.kind === 'section' ? 'Section: ' : 'Item: '}${node.label || '(unheaded)'}${node.detail ? `\n${node.detail}` : ''}${node.startTime ? `\nStart: ${node.startTime}` : ''}${node.endTime ? `\nEnd: ${node.endTime}` : ''}`).join('\n\n')}</pre>{!conflict && <button type="button" onClick={() => change(kept)}>Reapply my rundown entries</button>}</aside>}
     <form aria-label="Rundown" onSubmit={event => { event.preventDefault(); void save(); }}>

@@ -16,7 +16,9 @@ export function writeContent(db: DatabaseSync, programId: number, nodes: Content
 export function contentRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/programs/:id/content', coordinator);
-  const find = (id: number, owner: number) => db.prepare('SELECT id, title, date, start_time AS startTime, end_time AS endTime, status, version FROM programs WHERE id = ? AND owner_id = ?').get(id, owner) as Program | undefined;
+  const find = (id: number, owner: number) => db.prepare(`SELECT id, title, date, start_time AS startTime, end_time AS endTime,
+    CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = programs.id) THEN 'Published' ELSE 'Draft' END AS status, version
+    FROM programs WHERE id = ? AND owner_id = ?`).get(id, owner) as Program | undefined;
   router.put('/api/programs/:id/content', (req, res) => {
     const program = find(Number(req.params.id), res.locals.user.id);
     if (!program) return res.status(404).json({ error: 'Program not found.' });

@@ -15,6 +15,9 @@ export function seedProduct(env = process.env) {
     const identity = db.prepare('SELECT id FROM identities WHERE issuer = ? AND subject = ?').get(issuer, subject) as { id: number };
     db.prepare("INSERT OR IGNORE INTO coordinator_grants VALUES (?, 'dev')").run(identity.id);
     db.prepare("INSERT OR IGNORE INTO programs (owner_id, title, start_time, end_time, seed_key) VALUES (?, 'Community Gathering', '09:00', '12:00', 'standalone-community-gathering')").run(identity.id);
+    db.prepare("INSERT OR IGNORE INTO programs (owner_id, title, seed_key) VALUES (?, 'Example Published Program', 'standalone-published-example')").run(identity.id);
+    const published = db.prepare("SELECT id FROM programs WHERE seed_key = 'standalone-published-example'").get() as { id: number };
+    db.prepare('INSERT OR IGNORE INTO program_publications (program_id) VALUES (?)').run(published.id);
     // A configured replacement tester must also manage all demo Programs, without resetting Headers.
     db.prepare('UPDATE programs SET owner_id = ? WHERE seed_key IS NOT NULL AND owner_id != ?').run(identity.id, identity.id);
     const program = db.prepare("SELECT id FROM programs WHERE seed_key = 'standalone-community-gathering'").get() as { id: number };

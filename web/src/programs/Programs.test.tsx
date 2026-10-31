@@ -66,7 +66,7 @@ it('shows loading, empty, and access-denied states for the Program list', async 
   fetcher.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 403, json: async () => ({ error: 'Dev tester access required.' }) }));
   history.replaceState({}, '', '/unauthorized-list-check');
   rerender(<Programs/>);
-  expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('Dev tester access required.'));
+  expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('This account cannot manage Programs. Sign out and use the configured coordinator account.'));
   expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
 });
 

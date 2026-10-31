@@ -3,7 +3,8 @@ import type { DatabaseSync } from 'node:sqlite';
 import { headerValues, validateHeader, type Program } from '../domain/programs.js';
 import { readContent } from './content.js';
 
-const columns = 'id, title, date, start_time AS startTime, end_time AS endTime, status, version';
+const columns = `id, title, date, start_time AS startTime, end_time AS endTime,
+  CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = programs.id) THEN 'Published' ELSE 'Draft' END AS status, version`;
 export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/programs', coordinator);

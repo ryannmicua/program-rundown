@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { identityMigration } from './migrations/001-identity.js';
 import { programsMigration } from './migrations/002-programs.js';
 import { contentMigration } from './migrations/003-content.js';
+import { publicationMigration } from './migrations/004-publication.js';
 
 export function openDatabase(path: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -14,7 +15,7 @@ export function openDatabase(path: string) {
 export function openProduct(path: string) {
   const db = openDatabase(path);
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)');
-  for (const migration of [identityMigration, programsMigration, contentMigration]) {
+  for (const migration of [identityMigration, programsMigration, contentMigration, publicationMigration]) {
     if (db.prepare('SELECT version FROM schema_migrations WHERE version = ?').get(migration.version)) continue;
     db.exec('BEGIN IMMEDIATE');
     try {
