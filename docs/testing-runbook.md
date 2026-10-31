@@ -106,7 +106,7 @@ Its process-replacement test saves through one child server, terminates that pro
 
 ## U3 ordered Sections and Items
 
-**Last tested:** 2026-10-31. **Tested by:** program-rundown-u3 worker.
+**Last tested:** 2026-11-01. **Tested by:** program-rundown-u3 worker.
 
 **Setup:** Follow the U2 setup above. Use an isolated database and the local OIDC fixture for automated tests.
 The explicit dev seed adds three Sections and four Items to `Community Gathering` once, preserving later edits and removals.
@@ -146,3 +146,18 @@ It also checks Header/content revision conflicts and anonymous and unauthorized 
 - Content IDs remain stable across edits and sibling moves. Array order defines sibling order, even when children are interleaved in the API array.
 - A seed marker prevents deleted demo content from returning. Seeding never opens feedback storage.
 - Rebuild before browser tests, because the fixture serves `web/dist`.
+
+**UI state inventory for the U3 PR description:**
+
+1. **Loading:** the Program list shows “Loading Programs”; a Draft detail shows “Loading Draft.”
+2. **Empty:** an account without Programs gets the new Draft prompt; a Draft without Sections gets an add-Section prompt.
+3. **Loaded:** saved Sections and Items appear in the editor and escaped, ordered preview.
+4. **Edited:** local changes are marked unsaved; Save rundown becomes available.
+5. **Saving:** the button announces saving and the editor controls are disabled.
+6. **Validation rejected:** required Item labels are enforced in the form; server validation errors preserve entries and allow correction.
+7. **Saved:** a successful write advances the revision and announces “Rundown saved.”
+8. **Connection failure:** an alert keeps entries editable and allows retry.
+9. **Revision conflict:** an alert preserves entries and offers reload, then reapply against the latest revision.
+10. **Access denied:** a coordinator denial is surfaced with retry on the Program list; content APIs also reject anonymous requests and return 404 for another coordinator's Draft. A separate read-only Reader or Published state cannot occur in U3 because publication and Reader routes arrive in U4.
+
+Move controls are disabled at sibling boundaries, during saves, and during conflicts. The focused U3 browser journey also checks keyboard use and 1280px, 768px, and 390px layouts.

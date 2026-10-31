@@ -73,7 +73,7 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
           </section>
         </li>)}</ol>
         <button type="button" onClick={() => add('section', null)}>Add Section</button>
-        <button className="primary save-rundown" type="submit" disabled={!dirty}>{busy ? 'Saving rundown…' : 'Save rundown'}</button>
+        <button className="primary save-rundown" type="submit" disabled={!dirty || busy || conflict}>{busy ? 'Saving rundown…' : 'Save rundown'}</button>
         {dirty && <p>Unsaved rundown changes.</p>}
       </fieldset>
     </form>

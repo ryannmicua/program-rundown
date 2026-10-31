@@ -52,3 +52,20 @@ it('keeps unsaved entries on a failed save of an existing Draft without offering
   await screen.findByText('Draft saved.');
   expect(JSON.parse(fetcher.mock.calls[2][1].body)).toMatchObject({ title: 'My unsaved title', version: 1 });
 });
+
+it('shows loading, empty, and access-denied states for the Program list', async () => {
+  history.replaceState({}, '', '/');
+  let complete!: (value: { ok: boolean; status?: number; json(): Promise<unknown> }) => void;
+  const fetcher = vi.fn(() => new Promise(resolve => { complete = resolve; }));
+  vi.stubGlobal('fetch', fetcher);
+  const { rerender } = render(<Programs/>);
+  expect(screen.getByRole('status').textContent).toContain('Loading Programs');
+  complete({ ok: true, json: async () => ({ programs: [] }) });
+  await screen.findByText('Create a Draft with a title. You can add a date or either time whenever you’re ready.');
+  expect(screen.getByRole('heading', { name: 'No programs yet' })).toBeDefined();
+  fetcher.mockImplementationOnce(() => Promise.resolve({ ok: false, status: 403, json: async () => ({ error: 'Dev tester access required.' }) }));
+  history.replaceState({}, '', '/unauthorized-list-check');
+  rerender(<Programs/>);
+  expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('Dev tester access required.'));
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+});
