@@ -45,7 +45,7 @@ it('keeps unsaved entries on a failed save of an existing Draft without offering
   await screen.findByDisplayValue('Original Gathering');
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'My unsaved title' } });
   fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
-  await screen.findByRole('alert');
+  expect((await screen.findByRole('alert')).textContent).toBe('Could not connect. Your entries are kept. Try again.');
   expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('My unsaved title');
   fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));

@@ -30,11 +30,11 @@ export function Programs() {
     try {
       const response = await fetch(id ? `/api/programs/${id}` : '/api/programs');
       const data = await response.json();
-      if (!response.ok) throw Error(data.error || 'Could not load your Programs. Try again.');
+      if (!response.ok) { setError(data.error || 'Could not load your Programs. Try again.'); return; }
       if (id) { setSaved(data.program); setHeader(data.program); }
       else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
-    } catch (error) { setError(error instanceof Error ? error.message : 'Could not connect. Try again.'); }
+    } catch { setError('Could not connect. Try again.'); }
     finally { setBusy(false); }
   }
   useEffect(() => { if (!creating) void load(); }, [path]);
@@ -51,11 +51,12 @@ export function Programs() {
       if (!response.ok) {
         setErrors(data.errors || {});
         if (response.status === 409) { setConflict(true); setKept({ ...header }); }
-        throw Error(data.error || 'Could not save. Your entries are kept. Try again.');
+        setError(data.error || 'Could not save. Your entries are kept. Try again.');
+        return;
       }
       if (creating) { window.location.assign(`/programs/${data.program.id}`); return; }
       setSaved(data.program); setHeader(data.program); setKept(undefined); setConflict(false); setMessage('Draft saved.');
-    } catch (error) { setError(error instanceof Error ? error.message : 'Could not connect. Your entries are kept. Try again.'); }
+    } catch { setError('Could not connect. Your entries are kept. Try again.'); }
     finally { setBusy(false); }
   }
 
