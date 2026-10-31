@@ -5,6 +5,7 @@ See [docs/concepts.md](docs/concepts.md) for the program rundown concepts and vo
 See [docs/build-plan.md](docs/build-plan.md) for the architecture, vertical slices, dev deployment, and demo-data plan.
 
 Coordinators can create, reopen, and edit standalone Draft Program Headers, with optional dates and independent start/end times.
+They can compose and reorder a Draft's rundown of Sections and Items.
 The signed-in shell also provides optional dev feedback.
 
 Use Node.js 24. Install with `npm ci`, then run `npm run build`.
