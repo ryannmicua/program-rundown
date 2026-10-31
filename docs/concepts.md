@@ -18,30 +18,25 @@ In this project, "program" always means the document, never the gathering.
 A Program may contain Sections, mini-programs, or both.
 A mini-program is a program within a program, with its own header, optional times, and ordered children.
 Sections and mini-programs can nest; the model supports more than a flat list.
-Each Program stands alone and may optionally link to a one-off Event or a specific occurrence of a recurring Event.
+Each Program stands alone and may optionally link to at most one Event.
 A Program with no Event is normal.
 For a multi-day gathering, each day or session has a separate, complete Program.
 Several Programs may share a day, such as Sabbath Morning Program and Sabbath Afternoon Program.
-A recurring Event groups each occurrence's Programs separately; each Program keeps its own date.
+Within an Event, Programs may optionally be grouped by date; each Program keeps its own date.
 
 Example: the "Divine Service" sheet handed to attendees at a 10:30 a.m. worship service is one Program.
 
 ### Event
 
 An **Event** is an optional, lightweight organizing record for related Programs.
-It may be **one-off**, such as a multi-day Executive Committee meeting, or **recurring**, such as a weekly `Sabbath`.
-A one-off Event has a name, optional dates, and an ordered list of linked Programs.
-A recurring Event has a name, a recurrence, and dated occurrences; each occurrence has its own ordered list of linked Programs.
-A one-off Event or an occurrence can link Programs across several days, including several Programs on one day.
+It has a name, optional dates, and an ordered list of linked Programs.
+Examples include a multi-day `Example Conference` and `Sabbath`.
+An Event can link Programs across several days, including several Programs on one day.
+Within the Event, Programs may optionally be grouped by their own dates.
+For example, a `Sabbath` Event can group Vesper under Friday's date and Sabbath School, Divine Worship, and AY under Saturday's date.
+The date groups organize the linked Programs; each Program keeps its own date.
 
-A **Recurrence** describes how an Event repeats, such as `every week on Saturday` for `Sabbath`.
-An **Occurrence** is one dated instance of a recurring Event, such as `Sabbath — November 7, 2026`.
-Each week's occurrence groups that week's Vesper, Sabbath School, Divine Worship, and AY Programs.
-The occurrence's date identifies that week's gathering; each Program keeps its own date, including Friday's Vesper.
-
-A Program belongs to at most one Event grouping: a one-off Event or a specific occurrence of a recurring Event.
-For a recurring Event, the Program links to the specific occurrence, which identifies the Event it belongs to.
-It does not also link separately to the series or another occurrence.
+A Program links directly to at most one Event; a Program with no Event is normal.
 Linking a Program does not make it a mini-program or part of another Program.
 
 program-rundown composes and publishes Programs; the Event only links and lists related Programs together.
@@ -49,11 +44,11 @@ It does not manage the gathering itself (venue booking, attendance, ticketing, r
 
 | | Event | Program |
 |---|---|---|
-| What it is | An optional organizing record, either one-off or recurring | A complete document describing a day or session |
-| Example | `Example Conference`, linking daily and session Programs; `Sabbath`, grouping each week's Programs through an occurrence | The printed "Divine Service" sheet |
-| Who acts on it | Coordinators link and order related Programs for the Event or occurrence; readers find them together | Coordinators write it; attendees read it |
-| Relationship to publication | Only groups Programs, directly or through occurrences | Each Program can be drafted, published, and revised on its own |
-| Optional link | Lists Programs in order for the one-off Event or each occurrence | Belongs to a one-off Event, a specific recurring Event occurrence, or neither |
+| What it is | An optional, lightweight organizing record | A complete document describing a day or session |
+| Example | `Example Conference`, linking daily and session Programs; `Sabbath`, with Programs optionally grouped by date | The printed "Divine Service" sheet |
+| Who acts on it | Coordinators link and order related Programs for the Event, optionally grouping them by date; readers find them together | Coordinators write it; attendees read it |
+| Relationship to publication | Only groups related Programs | Each Program can be drafted, published, and revised on its own |
+| Optional link | Lists linked Programs in order, optionally grouped by date | Links to at most one Event; having no Event is normal |
 
 ### Coordinator and Reader
 
@@ -121,7 +116,8 @@ The leading `*` in `*Processional` and `*National Anthem` is text the coordinato
 
 The sample sheet has a Header, Sections containing Items, and a Footer.
 An optional Event link groups a complete Program with other Programs; it sits outside the Program's internal structure.
-The link points to a one-off Event or a specific recurring Event occurrence; the Program keeps its own Header date.
+The link points directly to the Event; the Program keeps its own Header date.
+The Event may optionally group its Programs by those dates.
 The outline below rebuilds the sample with placeholder names; the hymn titles are kept because they are the public titles of common hymns.
 
 ```text
@@ -208,11 +204,11 @@ These fit optional start/end times and Part extra info.
 Listing a venue or an arrival activity describes the flow; it does not manage bookings, registration, or transport.
 
 This shortened outline adapts that schedule, using placeholder names, venues, and message titles.
-Each day or session is a separate Program linked to one optional, one-off Event.
+Each day or session is a separate Program linked to one optional Event.
 The order below is the Event's list of linked Programs, not nested Sections or mini-programs.
 
 ```text
-Event: Example Conference (one-off; optional dates supplied: July 28–August 1)
+Event: Example Conference (optional dates supplied: July 28–August 1)
   Linked Programs, in order:
     1. Program: Day 1
          Header: DAY 1; date Tuesday, July 28
@@ -245,51 +241,52 @@ Keynote Message's Part displays: Alex Placeholder
 Each linked Program is complete, with its own Header, ordered content, and publication status.
 The abbreviated Programs omit their remaining content for readability.
 Day 4 and Vesper share July 31; the Sabbath Morning and Sabbath Afternoon Programs share August 1.
+The Event may optionally group its linked Programs by those dates.
 Each can stand alone without the Event link.
 Mini-programs remain available for a program within a single Program, as in the Community Gathering example above.
 
-### Recurring Sabbath example
+### Sabbath example grouped by date
 
-A recurring `Sabbath` Event organizes a separate occurrence for each week.
-Each occurrence groups that week's Vesper, Sabbath School, Divine Worship, and AY Programs.
-The occurrence date is Saturday; its Vesper Program has the preceding Friday's date.
+A `Sabbath` Event links Vesper, Sabbath School, Divine Worship, and AY Programs across weeks.
+This example groups the linked Programs by their own dates.
+Vesper has Friday's date; Sabbath School, Divine Worship, and AY have Saturday's date.
 Each linked Program remains complete, with its own Header, content, and publication status.
 
 ```text
-Event: Sabbath (recurring)
-  Recurrence: every week on Saturday
-  Occurrence: Sabbath — November 7, 2026
-    Linked Programs, in order:
+Event: Sabbath
+  Linked Programs, grouped by date and ordered within each date:
+    Friday, November 6, 2026:
       1. Program: Vesper
            Header: VESPER; date Friday, November 6, 2026
            Footer: Program Coordinator | Riley Placeholder
-      2. Program: Sabbath School
+    Saturday, November 7, 2026:
+      1. Program: Sabbath School
            Header: SABBATH SCHOOL; date Saturday, November 7, 2026
-      3. Program: Divine Worship
+      2. Program: Divine Worship
            Header: DIVINE WORSHIP; date Saturday, November 7, 2026
            Section: The Spoken Word; Part: Alex Placeholder
-      4. Program: AY
+      3. Program: AY
            Header: AY; date Saturday, November 7, 2026
-  Occurrence: Sabbath — November 14, 2026
-    Linked Programs, in order:
+    Friday, November 13, 2026:
       1. Program: Vesper
            Header: VESPER; date Friday, November 13, 2026
            Footer: Program Coordinator | Sam Sample
-      2. Program: Sabbath School
+    Saturday, November 14, 2026:
+      1. Program: Sabbath School
            Header: SABBATH SCHOOL; date Saturday, November 14, 2026
-      3. Program: Divine Worship
+      2. Program: Divine Worship
            Header: DIVINE WORSHIP; date Saturday, November 14, 2026
            Section: The Spoken Word; Part: Jamie Example
-      4. Program: AY
+      3. Program: AY
            Header: AY; date Saturday, November 14, 2026
 ```
 
-Each Program links only to its own week's occurrence of `Sabbath`.
+Each Program links directly to the same `Sabbath` Event.
+The date groups use the Programs' Header dates.
 The abbreviated Programs omit their remaining content for readability.
 Each week's Divine Worship is a separate Program, even though the title repeats.
 Publishing or revising one Program does not publish or revise another week's Program.
-The Event and its occurrences only group Programs; each Program can stand alone without its Event link.
-This example does not settle whether occurrences or their Programs are created automatically or copied from a previous week.
+The Event only groups Programs; each Program can stand alone without its Event link.
 
 ## 3. Vocabulary
 
@@ -325,34 +322,17 @@ Example: a `Morning Service` mini-program within a `Community Gathering`, contai
 Mini-programs describe content within a single Program.
 Separate daily or session Programs link through an optional Event instead.
 
-### Recurrence
-
-A **Recurrence** is the repeating pattern of a recurring Event.
-Example: `Sabbath` repeats `every week on Saturday`.
-The recurrence describes when the Event repeats; it does not specify Program content, Parts, or publication status.
-
-### Occurrence
-
-An **Occurrence** is one dated instance of a recurring Event.
-It belongs to one Event and has a date and an ordered list of linked Programs.
-Example: `Sabbath — November 7, 2026` groups that week's Vesper, Sabbath School, Divine Worship, and AY Programs.
-The next week's occurrence has its own Programs.
-The occurrence date does not require every linked Program to have that same date; Vesper can be on the preceding Friday.
-An occurrence groups complete Programs outside their internal structure; it is not a mini-program.
-
 ### Event link
 
-An **Event link** optionally associates a complete Program with a one-off Event or a specific occurrence of a recurring Event.
-A Program belongs to at most one such grouping, and having no Event is normal.
-A one-off Event has a name, optional dates, and an ordered list of its Programs.
-A recurring Event supplies the name and recurrence; each occurrence supplies its date and ordered list of Programs.
-Linking to an occurrence identifies both the Event and the dated instance; a separate link to the recurring Event is unnecessary.
+An **Event link** optionally associates a complete Program directly with an Event.
+A Program links to at most one Event, and having no Event is normal.
+An Event has a name, optional dates, and an ordered list of linked Programs, optionally grouped by the Programs' dates.
 Each Program keeps its own Header, content, and publication status.
 One day may have several Programs; the date does not identify a single Program.
 Example: `Sabbath Morning Program` and `Sabbath Afternoon Program` share August 1 and link to `Example Conference`.
-Another example: Vesper on November 6 and Divine Worship on November 7 both link to the `Sabbath — November 7, 2026` occurrence.
+Another example: Vesper on November 6 and Divine Worship on November 7 both link to `Sabbath`, grouped under their respective dates.
 
-The Event only links and lists the Programs together, directly or through occurrences.
+The Event only links and lists the Programs together, optionally grouped by date.
 It does not manage venues, attendance, tickets, rehearsals, or other logistics.
 
 ### Section
@@ -539,11 +519,9 @@ There is no version history or new published version per edit.
 
 | Term | Definition | Example |
 |---|---|---|
-| Program | A complete, standalone document listing a day or session's flow and who does each part; optionally linked to a one-off Event or a specific recurring Event occurrence | The "Divine Service" sheet |
-| Event | An optional organizing record for related Programs; one-off with optional dates and an ordered Program list, or recurring with a recurrence and dated occurrences; no event logistics | `Example Conference`, July 28–August 1; weekly `Sabbath` |
-| Recurrence | The repeating pattern of a recurring Event | `every week on Saturday` for `Sabbath` |
-| Occurrence | One dated instance of a recurring Event, with its own ordered list of linked Programs | `Sabbath — November 7, 2026` |
-| Event link | An optional association between a Program and at most one grouping: a one-off Event or a specific recurring Event occurrence | `Sabbath Morning Program` linked to `Example Conference`; Divine Worship linked to `Sabbath — November 7, 2026` |
+| Program | A complete, standalone document listing a day or session's flow and who does each part; optionally linked to at most one Event | The "Divine Service" sheet |
+| Event | An optional, lightweight organizing record with a name, optional dates, and an ordered list of linked Programs, optionally grouped by their dates; no event logistics | `Example Conference`, July 28–August 1; `Sabbath`, grouping Programs by date |
+| Event link | An optional, direct association between a Program and at most one Event | `Sabbath Morning Program` linked to `Example Conference`; Divine Worship linked to `Sabbath` |
 | Coordinator | A person who composes and publishes a Program and may read it as a Draft | A program coordinator |
 | Reader | A person who follows a published Program | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
@@ -610,8 +588,8 @@ The earlier decisions remain in place, with the additional decisions below.
 11. **Multi-day listings.**
     Use separate, complete Programs for each day or session, each able to stand alone.
     Several Programs may share a day, such as Sabbath Morning and Sabbath Afternoon Programs.
-    Each Program may optionally link to a one-off Event or a specific occurrence of a recurring Event; a Program with no Event is normal.
-    The Event only links and lists Programs together, directly or through occurrences; event logistics remain outside this project.
+    Each Program may optionally link to at most one Event; a Program with no Event is normal.
+    The Event only links and lists Programs together, optionally grouped by their dates; event logistics remain outside this project.
     Use mini-programs only for a program within a single Program.
 12. **Part extra info.**
     A Part may optionally include a title, topic, name, or description of the part being performed, including a venue description.
@@ -619,22 +597,27 @@ The earlier decisions remain in place, with the additional decisions below.
 13. **Participant extra info and reuse.**
     Define Participants once and reference them from Parts by name or by role.
     A Participant can carry a role and optional name, position, and organization, alongside the existing honorific and subtitle.
-14. **One-off and recurring Events.**
-    An Event remains a lightweight organizing record with a name.
-    A one-off Event has optional dates and an ordered list of linked Programs, including Programs across several days.
-    A recurring Event has a recurrence describing its repeating pattern and occurrences representing individual dated instances.
-    Each occurrence belongs to one Event and has its own date and ordered list of linked Programs.
-    A weekly `Sabbath` occurrence groups that week's Vesper, Sabbath School, Divine Worship, and AY Programs.
-    Each Program links to at most one grouping: a one-off Event or a specific recurring Event occurrence, never both or several occurrences.
-    The occurrence identifies the recurring Event; a Program does not also link separately to the series.
-    Each Program keeps its own date, content, and publication status; Vesper can precede the occurrence's Saturday date.
+14. **Programs under an Event, optionally grouped by date.**
+    An Event remains a lightweight organizing record with a name, optional dates, and an ordered list of linked Programs.
+    An Event can link Programs across several days, optionally grouped by each Program's own date.
+    Each Program links directly to at most one Event; a Program with no Event is normal.
+    Each Program keeps its own date, content, and publication status.
+    A `Sabbath` Event can group Friday's Vesper under Friday's date and Sabbath School, Divine Worship, and AY under Saturday's date.
 
-### Open choices
+### Deferred capabilities
+
+1. **Recurrence and dated occurrences — deferred.**
+   Recurrence patterns and dated Event occurrences are deferred entirely for now, not rejected.
+   The current model only links Programs directly to an Event, with optional grouping by the Programs' own dates.
+2. **Copy-forward — deferred.**
+   Copying a previous week's or occurrence's Programs forward is deferred for now, not rejected.
+   The current model does not include a copy-forward capability.
+
+### Resolved choices
 
 1. **Preparing the next occurrence.**
-   Should coordinators create each occurrence explicitly, or should the recurrence create occurrences automatically?
-   Defining a recurrence does not settle how Programs are created or published.
+   Resolved by deferring recurrence and occurrences entirely.
+   Explicit and automatic occurrence creation are both out of scope for now.
 2. **Copying a previous occurrence's Programs.**
-   Should a coordinator be able to copy the previous week's ordered Program set into the next occurrence?
-   If so, which content, Parts, and dates carry over, and what publication status should the copies start with?
-   The recurring Sabbath example does not assume copying or automatic publication.
+   Resolved by deferring copy-forward entirely.
+   Which content, Parts, dates, or publication status would carry over is outside the current scope.
