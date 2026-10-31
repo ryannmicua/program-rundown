@@ -481,6 +481,51 @@ Only these genuine template choices remain for the captain; they block U12, not 
 Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.
 
+## Core UI states — standing acceptance criteria
+
+Every slice must handle each core UI state that applies to its screens, with tests where practical.
+Its PR body must list all ten states, explaining how each is handled or why it cannot occur in that slice.
+Name the affected screen and test evidence; where testing is impractical, describe the manual check or limitation.
+
+| State | Acceptance criterion |
+| --- | --- |
+| Empty State | Guide the user before data exists, with a clear first action. |
+| Loading State | Keep the wait active with visible feedback; perceived speed matters. |
+| Error State | Explain the cause clearly and offer actionable recovery. |
+| Offline State | Inform the user that connectivity is unavailable and prevent blank views. |
+| Slow Network | Show incremental progress or updated wait guidance; avoid frozen spinners. |
+| Zero Search Results | Offer suggestions or alternatives so the user has a next action. |
+| Permission Denied | Explain the access restriction and provide a recovery route without exposing protected data. |
+| Session Expiry | Persist draft state before authentication teardown and support recovery after sign-in. |
+| Form Validation | Place inline errors at the exact input field that needs correction. |
+| Success State | Acknowledge completion and provide a clear next step. |
+
+### Follow-up gaps in merged U1 and U2 screens
+
+These gaps come from reading `main` at `2e4fcae`, after U1 and U2 merged.
+Sources: [shell](../web/src/App.tsx), [feedback](../web/src/feedback/Feedback.tsx), [Draft screens](../web/src/programs/Programs.tsx), and [API access checks](../src/app.ts).
+This is a follow-up list only; this documentation change fixes none of these gaps and leaves slice ordering unchanged.
+U3 covers its own states separately.
+
+| Screen | State | Missing behavior |
+| --- | --- | --- |
+| U1 feedback list (`/feedback`) | Empty State | `No notes yet.` gives no guidance to create the first note through the Feedback control. |
+| U1 feedback list, saved-note context, and done/reopen controls | Loading State | Reads and done/reopen requests have no pending indicator. The list shows `No notes yet.` while its initial request is pending. |
+| U1 shell sign-out | Loading State; Error State | Sign-out has no pending feedback. A rejected fetch has no catch or visible recovery message; only non-OK responses show an error. |
+| U1 feedback list, saved-note context, and done/reopen controls | Error State | Request errors show a message without an explicit retry action. Network failures use the fetch exception rather than a clear cause and recovery instruction. |
+| U1 shell and feedback; U2 Program list and Draft editor | Offline State | No offline indicator or reconnect guidance exists. Requests fall back to generic connection errors rather than explaining the offline state. |
+| U1 shell and feedback; U2 Program list and Draft editor | Slow Network | `Connecting…`, loading text, `Sending…`, and `Saving…` never advance or offer delayed-request guidance. Feedback reads and done/reopen requests remain silent. |
+| U1 shell access-denied card and feedback readback/management | Permission Denied | The shell explains the coordinator restriction but gives no access-request route. Feedback displays API denial text without an access-recovery route. |
+| U2 Program list and Draft editor | Permission Denied | Access failures lack an explanation of how to recover access. Another owner's Draft returns `Program not found.` with no safe access guidance. |
+| U1 shell and feedback management; U2 Program list and Draft editor | Session Expiry | The shell reads session state only at mount. Later 401 responses show text without updating authentication state or offering a sign-in recovery action. |
+| U1 feedback composer; U2 new/edit Draft forms | Session Expiry | Unsaved text lives only in React state. No persistent recovery copy protects entries across sign-in redirects or reloads; feedback creation itself permits anonymous notes. |
+| U1 feedback composer | Form Validation | Native required/length constraints exist, but custom blank-note and API validation messages appear outside the field without an error association to `Your note`. |
+| U2 new Draft (`/programs/new` → `/programs/:id`) | Success State | Creation navigates to the saved Draft without an explicit creation acknowledgement. Editing an existing Draft already shows `Draft saved.`. |
+
+Neither slice offers search, so Zero Search Results cannot occur in these screens.
+U2 already guides users from an empty Program list and associates Header validation errors with their fields.
+Its failed-save and conflict paths retain entries in memory; that does not provide persistence across authentication teardown.
+
 ## CI validation and slice completion
 
 U1 establishes reproducible npm scripts and lockfiles; later slices extend the same checks.
@@ -497,6 +542,7 @@ Each slice must satisfy these gates before completion:
 4. CI proves the production frontend and container build. U1 also tests feedback-disabled behavior, including production refusing activation.
 5. A focused browser journey covers the new outcome at desktop and narrow mobile widths, with keyboard access for changed controls.
 6. The slice completes no-mistakes in its own PR. After merge, the workflow publishes its image and the main Firstmate deploys that exact digest and records health/smoke evidence.
+7. The slice satisfies the standing core UI state criteria above, with all ten states accounted for in its PR body.
 
 Use unique temporary directories and ephemeral ports so CI jobs can share a runner safely.
 Stop only test processes started by the current run.
