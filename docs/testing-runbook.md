@@ -92,7 +92,7 @@ git diff --check
 **Coverage:** `test/programs.test.ts` checks API validation, owner restrictions, authentication, restart persistence, and unchanged state after rejected edits.
 Its process-replacement test saves through one child server, terminates that process, starts a second server, and reopens the same SQLite record.
 `test/program-seed.test.ts` checks migration from U1, replay, compatibility of identity/session reads, seed ownership, and preservation of later edits.
-`web/src/programs/Programs.test.tsx` checks conflict recovery and retained form values.
+`web/src/programs/Programs.test.tsx` checks conflict recovery, the network-failure message, and retained form values.
 `e2e/draft.spec.ts` runs the complete browser journey with the real API at desktop and mobile widths.
 
 **Gotchas:**
@@ -102,4 +102,4 @@ Its process-replacement test saves through one child server, terminates that pro
 - PATCH needs the version from the last read Header. A stale version returns 409; no Header field changes.
 - Same-origin JSON requires `Origin` matching `APP_ORIGIN`. Native browser fetch supplies it for mutations.
 - A previous U1 database migrates on open. Schema changes are additive; identity/session tables remain readable by U1.
-- No lint script exists in the U1 project. Typechecking and `git diff --check` accompany the tests and build.
+- No lint script exists in the project. Typechecking and `git diff --check` accompany the tests and build.
