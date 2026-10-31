@@ -18,15 +18,19 @@ In this project, "program" always means the document, never the gathering.
 A Program may contain Sections, mini-programs, or both.
 A mini-program is a program within a program, with its own header, optional times, and ordered children.
 Sections and mini-programs can nest; the model supports more than a flat list.
+An optional event-level container can group daily Programs across several days, with more than one Program on a day.
 
 Example: the "Divine Service" sheet handed to attendees at a 10:30 a.m. worship service is one Program.
 
 ### Event
 
 An **Event** is the real-world gathering that a Program describes: a worship service, a wedding, a graduation, a conference session.
-The event happens once, at a place and time; the Program is a description of its flow.
+An Event may span several days, with several daily Programs describing its flow.
 program-rundown composes and publishes Programs.
 It does not manage the event itself (venue booking, attendance, ticketing, rehearsals).
+An optional **Event container** groups those daily program listings using the existing nesting and mini-program concept.
+Day groups can contain several Programs, such as a morning program and an afternoon program.
+The container organizes listings only; it adds no event logistics.
 
 | | Event | Program |
 |---|---|---|
@@ -53,7 +57,7 @@ Those people are [Participants](#participant) because they have a Part, even whe
 A Program has a **status**.
 
 - **Draft**: a working document the coordinator has not released as the published listing.
-  Draft access permissions remain an open choice.
+  Coordinators may read a Draft.
 - **Published**: the coordinator has released it to readers, for printing or sharing.
 
 Example: on Wednesday the coordinator drafts Saturday's Program with "Speaker: TBA".
@@ -130,6 +134,7 @@ WORSHIP THROUGH HIS WORDS
 
 THE SPOKEN WORD                     DR. ALEX PLACEHOLDER  <- Section: heading + Part; block label "featured"
                          Education Director, Example Conference  <- Participant subtitle
+  Sermon title: A Life of Service                         <- Optional Part extra info
 
   Hymn of Consecration                      Congregation  <- Items in an unheaded closing Section
   Hymn of Hope     "The Mission"            Congregation
@@ -145,6 +150,13 @@ THE SPOKEN WORD                     DR. ALEX PLACEHOLDER  <- Section: heading + 
 Section order gives the sequence of groups; item order gives the sequence within a group.
 The closing Items illustrate an unheaded Section; their grouping does not require a printed heading.
 The leading `*` characters belong to the Item labels and have no separate modeled attribute.
+The added sermon-title line illustrates optional Part extra info; it is not from the sample.
+The speaker's Participant definition carries role `Speaker`, name `Alex Placeholder`, and honorific `Dr.`.
+Its position is `Education Director` and its organization is `Example Conference`; these can form the displayed subtitle.
+Parts on `Invocation`, `THE SPOKEN WORD`, and `Benediction` can reference that Participant by role `Speaker`.
+Each then displays `Alex Placeholder`, with the honorific where appropriate, instead of the role label.
+If the Participant has no name yet, those role references display `Speaker`.
+The sermon title describes the Part; the position and organization describe the Participant.
 
 The following outline illustrates nesting beyond the sample sheet.
 The block labels and structural notes explain the concepts; they are not prescribed printed text.
@@ -168,6 +180,49 @@ Program: Community Gathering (start 9:00 a.m.; end 12:00 p.m.; date omitted)
 
 At every level, start and end are independently optional.
 Ordering still describes the flow when no times are supplied.
+
+### Multi-day example
+
+The [reference site's Daily Schedule](https://executivecommittee.adventist.asia/) runs from DAY 1, Tuesday, July 28, through DAY 5, Saturday, August 1.
+It lists Vesper on July 31 and separate Sabbath Morning and Sabbath Afternoon Programs on August 1.
+Its registration entry runs from noon to 4:30 p.m. and includes a venue; other entries carry message titles and descriptions.
+These fit optional start/end times and Part extra info.
+Listing a venue or an arrival activity describes the flow; it does not manage bookings, registration, or transport.
+
+This shortened outline adapts that schedule, using placeholder names, venues, and message titles.
+Each daily Program appears as a mini-program under a day group in the optional Event container.
+
+```text
+Event container: Example Conference (July 28–August 1)
+  Day 1: Tuesday, July 28
+    Daily Program: Opening Day
+      Section: Arrival and Registration
+        Item: Registration (start 12:00 noon; end 4:30 p.m.)
+          Part: Registration Host; extra info: description "Venue: Example Hotel"
+      Mini-program: Opening Ceremony (start 7:00 p.m.; end 9:00 p.m.)
+        Section: Evening Worship
+          Item: Keynote Message
+            Part: reference Participant by role Speaker; extra info: title "A Life of Service"
+  Day 2: Wednesday, July 29
+    Daily Program: Wednesday Sessions
+  Day 3: Thursday, July 30
+    Daily Program: Thursday Sessions
+  Day 4: Friday, July 31
+    Daily Program: Friday Sessions
+    Daily Program: Vesper (start 6:30 p.m.; end omitted)
+  Day 5: Saturday, August 1
+    Daily Program: Sabbath Morning Program
+    Daily Program: Sabbath Afternoon Program
+
+Participant defined once: role Speaker; name Alex Placeholder;
+  position Education Director; organization Example Conference
+Keynote Message's Part displays: Alex Placeholder
+```
+
+The day groups use Sections, and the daily Programs use mini-programs with their own Headers and ordered children.
+The abbreviated days omit their children for readability.
+This reuses nesting rather than introducing event management or requiring one Program per day.
+Standalone Programs do not require an Event container.
 
 ## 3. Vocabulary
 
@@ -200,6 +255,18 @@ A Section may also contain a mini-program among its children.
 A mini-program has an optional start, optional end, and optional header date, just as a Program does.
 It may carry an optional [Block label](#block-label-class) for styling or its own settings.
 Example: a `Morning Service` mini-program within a `Community Gathering`, containing a `Dedication` mini-program.
+The same nesting can place daily Programs under day Sections in an optional Event container.
+
+### Event container and daily Program
+
+An **Event container** is an optional outer listing that groups Programs belonging to the same Event across one or more days.
+It uses the existing nesting concept: day Sections group daily Programs represented as mini-programs.
+A **Daily Program** is a Program for a particular day, or for part of that day, with its own Header and ordered children.
+One day may have several daily Programs; the date does not identify a single Program.
+Example: `Sabbath Morning Program` and `Sabbath Afternoon Program` share August 1 under one Event container.
+
+The container groups the composed listings; the Event remains the real-world gathering.
+It does not manage venues, attendance, tickets, rehearsals, or other logistics.
 
 ### Section
 
@@ -250,7 +317,8 @@ People can ask, "What is your part in the program?" or "Whose part is it now?"
 Here, Part names the assignment; Item names the activity.
 
 A Part is optional and need not identify a person.
-Its value may be blank, free text, a role, or a structured object with a role and an optional name.
+Its value may be blank, free text, a role, a structured object with a role and an optional name, or a Participant reference.
+A Part can reference a Participant by name or by role, using the Participant defined once for reuse.
 
 | Kind | Meaning | Example |
 |---|---|---|
@@ -258,6 +326,8 @@ Its value may be blank, free text, a role, or a structured object with a role an
 | Free text | Any coordinator-entered text, including names or groups | `Jamie Example`, `Pat Example and Lee Example`, `Congregation`, `TBA` |
 | Role | A function, with no named holder required | `Speaker` on `Invocation`; `Presider` on `CALL TO WORSHIP` |
 | Structured role and optional name | Display the name when present; otherwise display the role label | Role `Speaker`, name `Alex Placeholder` displays `Alex Placeholder`; role `Speaker` alone displays `Speaker` |
+| Participant reference by name | Use the Participant identified by that name | Reference `Alex Placeholder`, whose definition carries role `Speaker`, position `Education Director`, and organization `Example Conference` |
+| Participant reference by role | Display the referenced Participant's name when available; otherwise display the role label | Reference role `Speaker`: display `Alex Placeholder` when named, otherwise `Speaker` |
 
 For example, a Part value of `{role: "Speaker", name: "Alex Placeholder"}` displays `Alex Placeholder`.
 A value of `{role: "Speaker"}` displays `Speaker`; a blank name also falls back to the role label.
@@ -265,6 +335,13 @@ These are conceptual examples of the value, not a storage schema.
 
 A role used in a Part does not need to resolve to a named holder elsewhere in the Program.
 `Speaker` remains valid even when the coordinator has not named a speaker in a Section or Footer.
+A standalone role value remains allowed alongside references to defined Participants.
+
+A Part may also include optional **Part extra info**: a title, topic, name, or description of the part being performed.
+Examples: sermon title `A Life of Service`, topic `Service in the Community`, or description `Venue: Example Hall`.
+The name of a part describes what is presented; a Participant's name identifies who presents it.
+Part extra info supplements the assignment and can accompany a blank Part value, without requiring a named Participant.
+An Item's Detail remains optional free text for the activity; adding Part extra info does not remove or restrict Detail.
 
 ### Participant
 
@@ -273,12 +350,24 @@ Use Participant for the person and Part for the assignment of who does an activi
 A Part may still contain group text such as `Congregation`; the people taking that Part are Participants.
 It does not need to list their names.
 The same participant can appear many times: in Items, in Sections, and in the Footer.
+A Participant is defined once and referenced by Parts by name or by role, so repeated assignments reuse the same participant details.
+
+A Participant definition can carry:
+
+- **Role**: the function the Participant fills, such as `Speaker` or `Pianist`.
+- **Name** (optional): the person's name, such as `Alex Placeholder`.
+- **Position** (optional): the person's position, such as `Education Director`.
+- **Organization** (optional): the person's organization, such as `Example Conference`.
+
+The name may be omitted while a role awaits a named holder.
+When a Part references that Participant by role, display the name if available; otherwise display the role label.
 
 Example: `Morgan Pianist` performs `Offertory Music` and is also credited as `Pianist | Morgan Pianist` in the footer.
 `Jamie Example` performs both `Scripture Reading` and `Pastoral Prayer`.
 
 A participant may carry an **honorific** and a **subtitle**, such as those shown in the Section labeled `featured`.
 Example: honorific `Dr.`, subtitle `Education Director, Example Conference`.
+The subtitle may combine position and organization; those details describe the person rather than the part's title, topic, name, or description.
 
 ### Role
 
@@ -289,6 +378,7 @@ A role is not a person.
 For example, different participants may hold `Speaker` in successive Programs.
 A Program need not include every role shown in the sample.
 A role may appear in a Part without a named holder.
+A Part may also use a role to reference a defined Participant, displaying that Participant's name when available.
 
 ### Standing role
 
@@ -311,13 +401,15 @@ For example, `THE SPOKEN WORD` is a Section heading; `featured` is an example bl
 `featured` is not a hardcoded type and imposes no special structure.
 The Section can show a Part with `Dr. Alex Placeholder` and the participant subtitle `Education Director, Example Conference`.
 It may also contain Items, like any other Section.
-The subtitle describes the participant; an Item's Detail remains free text for that activity.
+The subtitle describes the participant's position or organization; an Item's Detail remains free text for that activity.
+A Part's optional title, topic, name, or description supplies extra information about the part being performed.
 
 ### Footer
 
 The **Footer** is the closing block that credits the Program's standing roles and their Parts.
 Each line pairs a role with its Part, written `Role | Part`.
-The Part follows the same flexible value rules: it may be blank, text, a role, or a structured role with an optional name.
+The Part follows the same flexible value rules: blank, text, a role, a structured role with an optional name, or a Participant reference.
+Footer Parts can reference Participants by name or by role and may include optional Part extra info.
 
 Example:
 
@@ -350,21 +442,24 @@ These details in the sample affect the model and are easy to miss.
 ## 5. Program lifecycle
 
 A coordinator composes a Draft and publishes it for readers.
+Coordinators may read a Draft before publication.
 Publication status describes whether the listing has been released.
 For example, a coordinator may prepare a Draft on Wednesday and release the completed listing on Friday.
 Later edits replace the published Program, so readers receive the current listing.
 There is no version history or new published version per edit.
-Who may read a Draft remains the only open question.
 
 ## 6. Glossary
 
 | Term | Definition | Example |
 |---|---|---|
 | Program | The composed document listing the order of an event and who does each part | The "Divine Service" sheet |
-| Event | The real-world gathering a Program describes; not managed by program-rundown | Saturday worship at 10:30 a.m. |
-| Coordinator | A person who composes and publishes a Program | A program coordinator |
+| Event | The real-world gathering, possibly spanning days, that Programs describe; not managed by program-rundown | A conference from July 28 through August 1 |
+| Event container | An optional outer listing grouping daily Programs through nested day Sections and mini-programs; no event logistics | `Example Conference` with five day groups |
+| Daily Program | A Program for a day or part of a day; several may share a day | `Sabbath Morning Program` and `Sabbath Afternoon Program` on August 1 |
+| Coordinator | A person who composes and publishes a Program and may read it as a Draft | A program coordinator |
 | Reader | A person who follows a published Program | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
+| Draft | A working Program that Coordinators may read before publication | Wednesday's unfinished Saturday listing |
 | Header | The identifying block of a Program or mini-program: title, optional start, optional end, optional date | `DIVINE SERVICE`, `10:30 a.m.` |
 | Mini-program | A program within a Program, with its own Header, optional times, and ordered children; nesting is supported | `Morning Service` within `Community Gathering` |
 | Section | An ordered group of Items, optionally headed; may contain nested Sections or mini-programs | `CALL TO WORSHIP`; an unheaded closing Section |
@@ -374,24 +469,28 @@ Who may read a Draft remains the only open question.
 | Item | One ordered activity within a Section, regardless of printed line breaks | `Hymn of Celebration` item |
 | Item label | What happens in an Item; any leading symbols are ordinary text | `Offertory Prayer`, `*Introit` |
 | Detail | Optional free text for an Item | `"Holy, Holy, Holy"`, `Psalm 100:1–5` |
-| Part | The optional assignment of who does an Item or leads a Section or block; blank, text, role, or role with optional name | `Congregation`; role `Speaker` with no name displays `Speaker` |
-| Participant | A person who has a Part in the Program | `Jamie Example` |
+| Part | The optional assignment of who does an Item or leads a block; accepts blank, text, role, role with optional name, or a Participant reference | Role reference `Speaker` displays the Participant's name when available, otherwise `Speaker` |
+| Part extra info | Optional title, topic, name, or description of the part being performed | Sermon title `A Life of Service`; description `Venue: Example Hall` |
+| Participant | A person defined once for reuse by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
+| Participant reference | A Part identifies a defined Participant by name or by role | Name `Alex Placeholder` or role `Speaker` |
+| Position | A Participant's optional position | `Education Director` |
+| Organization | A Participant's optional organization | `Example Conference` |
 | Group | Text naming people who share a Part, without listing each person | `Congregation` |
-| Role | A named function that may appear in a Part without a named holder | `Speaker` |
+| Role | A named function usable as a standalone Part value or a reference to a Participant; no name required | `Speaker` |
 | Standing role | A function applying to the whole Program, credited in the footer | `Pianist` |
 | Start time / end time | Independently optional times on a Program, mini-program, Section, or Item | Start only: `10:30 a.m.`; end only: `12:00 p.m.` |
 | Date | Optional event day on a Program or mini-program Header | `7 November 2026` |
 | Honorific | A courtesy title before a participant's name | `Dr.` |
-| Subtitle | A participant's title or affiliation shown under the name | `Education Director, Example Conference` |
+| Subtitle | Participant information shown under the name, which may combine position and organization | `Education Director, Example Conference` |
 | Footer | The closing list of standing roles and their Parts | `Presider \| Sam Sample` |
 
-## 7. Decisions and remaining open question
+## 7. Decisions
 
 ### Settled decisions
 
 Nesting is supported: a Program may contain Sections and mini-programs, and those groups may contain further groups.
 A mini-program has its own Header, optional times, and ordered children.
-The nine earlier questions are decided as follows.
+The earlier decisions remain in place, with the additional decisions below.
 
 1. **Time per item.**
    Programs, mini-programs, Sections, and Items may each have an optional start and an optional end.
@@ -410,15 +509,25 @@ The nine earlier questions are decided as follows.
    Use Item; wrapping across printed lines does not create additional Items.
 7. **Assignments.**
    Call the assignment a Part and a person who has a Part a Participant.
-   A Part is optional: blank, free text, a role, or a structured role with an optional name.
+   A Part is optional: blank, free text, a role, a structured role with an optional name, or a Participant reference.
    The structured value displays the name when present, otherwise the role label.
    Roles need not resolve to named holders.
+   A Part can reference a Participant by name or by role; a role reference displays the Participant's name when available, otherwise the role label.
 8. **Detail kinds.**
    Detail is free text, without predefined kinds.
 9. **Publication.**
    Later edits replace the published Program; there is no version history or new version per edit.
+10. **Draft readership.**
+    Coordinators may read a Draft.
+11. **Multi-day listings.**
+    An optional Event container groups daily Programs using nested day Sections and mini-programs.
+    A day can hold several Programs, such as Sabbath Morning and Sabbath Afternoon Programs.
+    The container groups program listings only; event logistics remain outside this project.
+12. **Part extra info.**
+    A Part may optionally include a title, topic, name, or description of the part being performed, including a venue description.
+    Item Detail remains free text and stays available.
+13. **Participant extra info and reuse.**
+    Define Participants once and reference them from Parts by name or by role.
+    A Participant can carry a role and optional name, position, and organization, alongside the existing honorific and subtitle.
 
-### Open question: Draft readership
-
-Who may read a Draft?
-Draft access permissions remain undecided.
+No open questions remain in this document.
