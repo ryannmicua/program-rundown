@@ -103,3 +103,61 @@ Its process-replacement test saves through one child server, terminates that pro
 - Same-origin JSON requires `Origin` matching `APP_ORIGIN`. Native browser fetch supplies it for mutations.
 - A previous U1 database migrates on open. Schema changes are additive; identity/session tables remain readable by U1.
 - No lint script exists in the project. Typechecking and `git diff --check` accompany the tests and build.
+
+## U3 ordered Sections and Items
+
+**Last tested:** 2026-11-01. **Tested by:** program-rundown-u3 worker.
+
+**Setup:** Follow the U2 setup above. Use an isolated database and the local OIDC fixture for automated tests.
+The explicit dev seed adds three Sections and four Items to `Community Gathering` once, preserving later edits and removals.
+
+**How to test:**
+
+1. Create a Draft. Add a headed Section with a start time only, then add `*Introit` and `Prayer` Items.
+2. Give `*Introit` multiline Detail and an end time only. Add an unheaded Section with `Closing Remarks`.
+3. Focus **Move Prayer up** and press Enter. Click **Move unheaded Section up**, then **Save rundown**.
+4. Reload. Verify the unheaded Section comes first, and `Prayer` precedes `*Introit` within the headed Section.
+5. Verify literal `*Introit`, independent times, and three Items in the preview. Detail wrapping must not add Items.
+6. Inspect at 1280px, 768px, and 390px. Verify no horizontal overflow and usable move controls.
+7. Edit labels, Detail, and times. Remove an Item, save, and reload; remove a Section and its Items, save, and reload.
+8. Open the Draft in two tabs, save one, then save the other's rundown. Verify a conflict retains unsaved entries.
+9. Choose **Reload saved rundown**, then **Reapply my rundown entries**, review, and save.
+10. Run the seed twice, edit content, then seed again. Delete all demo content and seed again; removed content must stay removed.
+
+**Safe actions:** Reads and tests against temporary fixtures.
+**Data changes:** Saving replaces the selected Program's tree atomically. Removing a Section also removes its Items when saved.
+Use disposable storage for QA. Preserve shared demo edits and feedback.
+**Cleanup:** Automated tests close their own servers and remove their own temporary databases. Stop only manual fixtures started for this task.
+
+**Verification commands:** `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, and `git diff --check`.
+Set `PLAYWRIGHT_OUTPUT_DIR` to a task-specific directory outside the checkout for screenshots and failure traces.
+
+**Coverage:** `test/content.test.ts` exercises real API saves, reorder persistence across restart, removal, parent validation, and atomic failure.
+It also checks Header/content revision conflicts and anonymous and unauthorized access.
+`test/program-seed.test.ts` covers migration replay, seed ordering, edited content, and intentional deletion preservation.
+`web/src/editor/ContentEditor.test.tsx` checks escaped preview text, multiline grouping, retry after connection failure, and conflict recovery.
+`e2e/compose.spec.ts` covers the complete compose/reorder/remove journey and captures three viewport screenshots.
+
+**Gotchas:**
+
+- Header and content share the Program revision. A stale save returns 409 without changing either Header or tree.
+- The editor stores order locally until **Save rundown**. Pointer and keyboard users share the same move buttons.
+- The flat U3 tree permits only root Sections and Items under Sections; nesting and mini-programs arrive in U5.
+- Content IDs remain stable across edits and sibling moves. Array order defines sibling order, even when children are interleaved in the API array.
+- A seed marker prevents deleted demo content from returning. Seeding never opens feedback storage.
+- Rebuild before browser tests, because the fixture serves `web/dist`.
+
+**UI state inventory for the U3 PR description:**
+
+1. **Loading:** the Program list shows “Loading Programs”; a Draft detail shows “Loading Draft.”
+2. **Empty:** an account without Programs gets the new Draft prompt; a Draft without Sections gets an add-Section prompt.
+3. **Loaded:** saved Sections and Items appear in the editor and escaped, ordered preview.
+4. **Edited:** local changes are marked unsaved; Save rundown becomes available.
+5. **Saving:** the button announces saving and the editor controls are disabled.
+6. **Validation rejected:** required Item labels are enforced in the form; server validation errors preserve entries and allow correction.
+7. **Saved:** a successful write advances the revision and announces “Rundown saved.”
+8. **Connection failure:** an alert keeps entries editable and allows retry.
+9. **Revision conflict:** an alert preserves entries and offers reload, then reapply against the latest revision.
+10. **Access denied:** a coordinator denial is surfaced with retry on the Program list; content APIs also reject anonymous requests and return 404 for another coordinator's Draft. A separate read-only Reader or Published state cannot occur in U3 because publication and Reader routes arrive in U4.
+
+Move controls are disabled at sibling boundaries, during saves, and during conflicts. The focused U3 browser journey also checks keyboard use and 1280px, 768px, and 390px layouts.

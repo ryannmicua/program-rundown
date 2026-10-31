@@ -40,6 +40,21 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .header-fields label { display: block; margin-bottom: .5rem; font-weight: 600; }
 .header-fields input { display: block; width: 100%; min-width: 0; border: 1px solid #8ca99e; border-radius: 6px; background: white; color: inherit; padding: .7rem; font: inherit; }
 .header-fields [aria-invalid=true] { border-color: #9a3527; }
+.header-fields textarea { width: 100%; min-height: 6rem; resize: vertical; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; color: inherit; }
+.rundown-editor fieldset { min-width: 0; padding: 0; border: 0; }
+.content-sections, .content-items { list-style: none; padding: 0; }
+.content-section { border: 1px solid #b5c6bf; border-radius: 6px; padding: 1rem; margin: 1.5rem 0; }
+.content-item { border-left: 3px solid #d6ded4; margin: 1.5rem 0; padding-left: 1rem; }
+.content-section h3, .content-item h4 { white-space: pre-wrap; }
+.node-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.node-actions button { font-size: .85rem; padding: .5rem; }
+.save-rundown { margin-left: .75rem; }
+.rundown-preview { margin-top: 2rem; border-top: 1px solid #b5c6bf; }
+.preview-section { margin: 1.5rem 0; }
+.preview-section h4 { white-space: pre-wrap; }
+.preview-section li { margin: 1rem 0; }
+.content-times { font-size: .85rem; margin: .35rem 0; color: #54736b; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .field-error { color: #9a3527; margin: .4rem 0; }
 .kept-header { border-left: 3px solid #bc7526; padding: .2rem 1rem 1rem; margin: 1.5rem 0; background: #f5f4ee; }
 @media (max-width: 540px) { .edition { display: none; } header { justify-content: space-between; gap: .5rem; } main { padding: 3rem 1.2rem; } .card { padding: 1.3rem; } footer span { display: none; } }

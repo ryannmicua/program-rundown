@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Header, HeaderErrors, Program } from '../../../src/domain/programs.js';
+import type { ContentNode } from '../../../src/domain/content.js';
+import { ContentEditor } from '../editor/ContentEditor.js';
 
 const blank: Header = { title: '', date: null, startTime: null, endTime: null };
 function HeaderSummary({ header }: { header: Header }) {
@@ -17,6 +19,7 @@ export function Programs() {
   const detail = creating || Boolean(id);
   const [programs, setPrograms] = useState<Program[]>();
   const [saved, setSaved] = useState<Program>();
+  const [nodes, setNodes] = useState<ContentNode[]>([]);
   const [header, setHeader] = useState<Header>(blank);
   const [kept, setKept] = useState<Header>();
   const [errors, setErrors] = useState<HeaderErrors>({});
@@ -31,8 +34,10 @@ export function Programs() {
       const response = await fetch(id ? `/api/programs/${id}` : '/api/programs');
       const data = await response.json();
       if (!response.ok) { setError(data.error || 'Could not load your Programs. Try again.'); return; }
-      if (id) { setSaved(data.program); setHeader(data.program); }
-      else setPrograms(data.programs);
+      if (id) {
+        if (saved && (['title', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key])) setKept({ ...header });
+        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []);
+      } else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
     } catch { setError('Could not connect. Try again.'); }
     finally { setBusy(false); }
@@ -91,5 +96,6 @@ export function Programs() {
         <button className="primary" type="submit" disabled={busy || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
       </form>}
     </section>
+    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={setSaved} reload={load}/>}
   </>;
 }

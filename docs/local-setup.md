@@ -38,9 +38,10 @@ node --env-file=.env dist/demo/seed.js
 For source development, export the same environment configuration and run `npm run seed`.
 The seed requires `APP_ENV=dev`, `DEV_COORDINATOR_ISSUER`, and `DEV_COORDINATOR_SUBJECT`.
 It creates the standalone `Community Gathering` Draft Header, with no date, a 09:00 start, and a 12:00 end.
-There are no Events, Sections, or Participants yet.
+It adds ordered Sections and Items, including an unheaded closing Section, literal `*Introit`, multiline Detail, and independent optional times.
+There are no Events or Participants yet. Nested groups and mini-programs arrive in U5.
 The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
-Repeating the seed preserves edited Headers, unrelated Programs, sessions, identity mappings, and feedback.
+Repeating the seed preserves edited Headers and rundown content, including deliberate removal of all content, plus unrelated Programs, sessions, identity mappings, and feedback.
 If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs only.
 Startup applies additive product migrations; startup and deployment never reset or seed data.
 
@@ -60,12 +61,29 @@ Choose **Reapply my entries**, review the Header, then **Save Draft** to save ag
 | --- | --- |
 | `GET /api/programs` | List the signed-in coordinator's standalone Programs. |
 | `POST /api/programs` | Create a Draft with `title` and optional `date`, `startTime`, and `endTime`. |
-| `GET /api/programs/:id` | Read an owned Draft Header and its `version`. |
+| `GET /api/programs/:id` | Read an owned Draft Header, its `version`, and ordered content `nodes`. |
 | `PATCH /api/programs/:id` | Edit Header fields with the last read `version`; stale versions return 409 without writing. |
+| `PUT /api/programs/:id/content` | Save `{version, nodes}` atomically; stale versions return 409 without changing content. |
 
 Dates use `YYYY-MM-DD`; times use `HH:MM`. Use `null` or an empty string to clear an optional field.
 Omitted edit fields retain their values. Blank titles, invalid calendar dates, and malformed times return 400 with field errors.
 Unauthenticated requests return 401. Unconfigured identities return 403; inaccessible or missing Programs return 404 for a coordinator.
+
+## Compose a rundown
+
+Open a saved Draft, then choose **Add Section**. Leave its heading blank for an unheaded group.
+Choose **Add Item** inside a Section. Enter an Item label, optional free-text Detail, and either time independently.
+Use **Move up** or **Move down** with a pointer, or focus a move button and press Enter or Space.
+Remove an Item with **Remove Item**. **Remove Section and its Items** removes the entire group from the local draft.
+Choose **Save rundown** to persist additions, edits, removals, and order together.
+The preview follows the current entries. Wrapped lines and line breaks remain within the same Item.
+
+Header and content saves share a revision. Conflicts preserve rundown entries and offer **Reload saved rundown** and **Reapply my rundown entries**.
+Reload replaces the current Header and rundown with saved values. Unsaved Header or rundown entries stay visible to reapply; review them before saving again.
+Content nodes have stable `id`, `parentId`, `kind`, `label`, `detail`, `startTime`, and `endTime` fields.
+Sections have `kind: "section"`, `parentId: null`, and empty Detail. Items require a label and their Section's ID as `parentId`.
+Array order determines sibling order. Content times use `HH:MM` or `null`.
+A rundown holds up to 300 nodes; labels hold up to 200 characters, Item Detail up to 10000, and all labels and Detail together up to 60000.
 
 ## Run the container
 

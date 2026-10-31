@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { headerValues, validateHeader, type Program } from '../domain/programs.js';
+import { readContent } from './content.js';
 
 const columns = 'id, title, date, start_time AS startTime, end_time AS endTime, status, version';
 export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
@@ -22,7 +23,7 @@ export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
     const id = Number(req.params.id);
     const program = Number.isSafeInteger(id) && id > 0 ? find(id, res.locals.user.id) : undefined;
     if (!program) return res.status(404).json({ error: 'Program not found.' });
-    res.json({ program });
+    res.json({ program, nodes: readContent(db, program.id) });
   });
   router.patch('/api/programs/:id', (req, res) => {
     const id = Number(req.params.id);

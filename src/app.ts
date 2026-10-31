@@ -7,6 +7,8 @@ import { sessions } from './auth/session.js';
 import { authRoutes } from './auth/oidc.js';
 import type { Config } from './config.js';
 import { programRoutes } from './api/programs.js';
+import { contentRoutes } from './api/content.js';
+import { contentBodyLimit } from './domain/content.js';
 
 export async function createApp(config: Config) {
   const db = openProduct(config.productPath);
@@ -19,6 +21,7 @@ export async function createApp(config: Config) {
   });
   if (!config.feedbackEnabled) app.all(['/feedback', '/api/feedback', '/api/feedback/{*path}'], (_req, res) => res.status(404).send('Not found'));
   app.use(cookieParser(config.secret));
+  app.put('/api/programs/:id/content', express.json({ limit: contentBodyLimit }));
   app.use(express.json({ limit: '32kb' }));
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -35,6 +38,7 @@ export async function createApp(config: Config) {
   app.use(authRoutes(db, config, store));
   app.get('/api/session', (_req, res) => res.json({ user: res.locals.user ? { label: res.locals.user.label, coordinator: res.locals.user.coordinator } : null, feedbackEnabled: config.feedbackEnabled }));
   app.use(programRoutes(db, tester));
+  app.use(contentRoutes(db, tester));
   let feedback: { close(): void } | undefined;
   if (config.feedbackEnabled) {
     const { feedbackModule } = await import('./feedback/index.js');

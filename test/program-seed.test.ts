@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -48,14 +48,23 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
       db.prepare('INSERT INTO programs (owner_id, title) VALUES (?, ?)').run(owner.owner_id, 'Unrelated Draft');
       const before = db.prepare('SELECT * FROM programs ORDER BY id').all();
       const sessions = db.prepare('SELECT * FROM sessions').all();
+      expect(db.prepare('SELECT label FROM content_nodes ORDER BY position').all()).toEqual([
+        { label: 'Call to Worship' }, { label: '*Introit' }, { label: 'Prayer' }, { label: 'The Spoken Word' }, { label: 'Reading' }, { label: '' }, { label: 'Closing Remarks' },
+      ]);
+      db.prepare("UPDATE content_nodes SET detail = 'Edited detail' WHERE id = 'demo-introit'").run();
+      const content = db.prepare('SELECT * FROM content_nodes ORDER BY position').all();
       seedProduct(env);
+      expect(db.prepare('SELECT * FROM content_nodes ORDER BY position').all()).toEqual(content);
       expect(db.prepare('SELECT * FROM programs ORDER BY id').all()).toEqual(before);
       expect(db.prepare('SELECT * FROM sessions').all()).toEqual(sessions);
       // Retarget only demo ownership if the operator replaces the mapped synthetic identity.
       seedProduct({ ...env, DEV_COORDINATOR_SUBJECT: 'replacement-placeholder' });
       const replacement = db.prepare('SELECT id FROM identities WHERE subject = ?').get('replacement-placeholder') as { id: number };
-      expect(db.prepare('SELECT owner_id, title, version FROM programs WHERE seed_key IS NOT NULL').get()).toEqual({ owner_id: replacement.id, title: 'Edited Gathering', version: 2 });
+      expect(db.prepare('SELECT owner_id, title, version FROM programs WHERE seed_key IS NOT NULL').get()).toEqual({ owner_id: replacement.id, title: 'Edited Gathering', version: 3 });
       expect(db.prepare('SELECT owner_id FROM programs WHERE seed_key IS NULL').get()).toEqual({ owner_id: owner.owner_id });
+      db.prepare('DELETE FROM content_nodes').run();
+      seedProduct(env);
+      expect(db.prepare('SELECT * FROM content_nodes').all()).toEqual([]);
     } finally { db.close(); }
   } finally { await f.close(); }
 });
