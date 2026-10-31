@@ -6,6 +6,7 @@ import { openProduct } from './db/product.js';
 import { sessions } from './auth/session.js';
 import { authRoutes } from './auth/oidc.js';
 import type { Config } from './config.js';
+import { programRoutes } from './api/programs.js';
 
 export async function createApp(config: Config) {
   const db = openProduct(config.productPath);
@@ -32,8 +33,8 @@ export async function createApp(config: Config) {
     next();
   };
   app.use(authRoutes(db, config, store));
-  app.get('/api/session', (_req, res) => res.json({ user: res.locals.user, feedbackEnabled: config.feedbackEnabled }));
-  app.get('/api/programs', tester, (_req, res) => res.json({ programs: [] }));
+  app.get('/api/session', (_req, res) => res.json({ user: res.locals.user ? { label: res.locals.user.label, coordinator: res.locals.user.coordinator } : null, feedbackEnabled: config.feedbackEnabled }));
+  app.use(programRoutes(db, tester));
   let feedback: { close(): void } | undefined;
   if (config.feedbackEnabled) {
     const { feedbackModule } = await import('./feedback/index.js');
@@ -43,7 +44,7 @@ export async function createApp(config: Config) {
   }
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
   app.use(express.static(resolve('web/dist'), { index: false }));
-  app.get(['/', '/signin'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
+  app.get(['/', '/signin', '/programs/new', '/programs/:id'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
   app.use((_req, res) => res.status(404).send('Not found'));
   const errors: ErrorRequestHandler = (error, _req, res, _next) => {
     // Never log request URLs, tokens, or OIDC error bodies.
