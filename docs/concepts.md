@@ -63,6 +63,21 @@ A person can be both: a coordinator also reads the published Program on the day.
 Note that "Congregation" also appears inside the sample Program as a Part value (the people who sing a hymn).
 Those people are [Participants](#participant) because they have a Part, even when they are also Readers.
 
+Coordinators need to:
+
+1. **Manage Parts.**
+   Add, update, or clear assignments on Items, Sections, other blocks, and Footer standing roles.
+   Use the existing [Part](#part) value rules.
+2. **Easily move Parts around.**
+   Relocate a Part assignment; the Part identifies who does an activity or leads a block, while the Item identifies the activity.
+   The allowed move boundaries remain an [open choice](#open-choices-for-the-captain).
+3. **See which Parts have no assignment yet.**
+   A blank Part has no assignment, even if it has Part extra info.
+   Whether role-only Parts also count as unassigned remains an open choice.
+4. **Get a list of Participants.**
+   Use [Participant](#participant) for the people taking Parts, including people represented by group text.
+   The list's scope remains an open choice.
+
 ### Draft and Published
 
 A Program has a **status**.
@@ -410,6 +425,12 @@ The name of a part describes what is presented; a Participant's name identifies 
 Part extra info supplements the assignment and can accompany a blank Part value, without requiring a named Participant.
 An Item's Detail remains optional free text for the activity; adding Part extra info does not remove or restrict Detail.
 
+For coordinator review, an **unassigned Part** includes a blank Part value: no assignment has been supplied.
+Omitting the optional Part value also leaves no assignment; this does not require every Item or block to have one.
+Part extra info alone does not assign anyone.
+Role-only values remain valid; whether to include them among unassigned Parts is an [open choice](#open-choices-for-the-captain).
+This includes a standalone role, a structured role without a name, or a role reference to a Participant without a name.
+
 ### Participant
 
 A **Participant** is a person who has a Part in the Program.
@@ -522,7 +543,7 @@ There is no version history or new published version per edit.
 | Program | A complete, standalone document listing a day or session's flow and who does each part; optionally linked to at most one Event | The "Divine Service" sheet |
 | Event | An optional, lightweight organizing record with a name, optional dates, and an ordered list of linked Programs, optionally grouped by their dates; no event logistics | `Example Conference`, July 28–August 1; `Sabbath`, grouping Programs by date |
 | Event link | An optional, direct association between a Program and at most one Event | `Sabbath Morning Program` linked to `Example Conference`; Divine Worship linked to `Sabbath` |
-| Coordinator | A person who composes and publishes a Program and may read it as a Draft | A program coordinator |
+| Coordinator | A person who composes and publishes a Program, may read it as a Draft, manages and moves Parts, sees unassigned Parts, and gets a Participant list | A program coordinator |
 | Reader | A person who follows a published Program | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
 | Draft | A working Program that Coordinators may read before publication | Wednesday's unfinished Saturday listing |
@@ -536,8 +557,10 @@ There is no version history or new published version per edit.
 | Item label | What happens in an Item; any leading symbols are ordinary text | `Offertory Prayer`, `*Introit` |
 | Detail | Optional free text for an Item | `"Holy, Holy, Holy"`, `Psalm 100:1–5` |
 | Part | The optional assignment of who does an Item or leads a block; accepts blank, text, role, role with optional name, or a Participant reference | Role reference `Speaker` displays the Participant's name when available, otherwise `Speaker` |
+| Unassigned Part | A Part with no assignment supplied: a blank or omitted Part value, even with Part extra info; inclusion of role-only values remains open | An empty Part on `Prayer` |
 | Part extra info | Optional title, topic, name, or description of the part being performed | Sermon title `A Life of Service`; description `Venue: Example Hall` |
 | Participant | A person defined once for reuse by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
+| Participant list | A coordinator's list of people taking Parts, using the existing Participant definition; Program or Event scope remains open | `Jamie Example`, who performs `Scripture Reading` and `Pastoral Prayer` |
 | Participant reference | A Part identifies a defined Participant by name or by role | Name `Alex Placeholder` or role `Speaker` |
 | Position | A Participant's optional position | `Education Director` |
 | Organization | A Participant's optional organization | `Example Conference` |
@@ -603,6 +626,21 @@ The earlier decisions remain in place, with the additional decisions below.
     Each Program links directly to at most one Event; a Program with no Event is normal.
     Each Program keeps its own date, content, and publication status.
     A `Sabbath` Event can group Friday's Vesper under Friday's date and Sabbath School, Divine Worship, and AY under Saturday's date.
+15. **Coordinator capabilities.**
+    Coordinators can manage Parts, easily move Parts around, see Parts with no assignment yet, and get a list of Participants.
+    These capabilities use the existing Part and Participant definitions; the choices below remain open.
+
+### Open choices for the captain
+
+1. **Part move boundaries.**
+   Which boundaries may a move cross: Items, Sections, or other blocks within a Program; separate Programs; or only Programs linked to the same Event?
+   A Part remains the assignment, and an Item remains the activity.
+2. **Role-only Parts in the unassigned list.**
+   Should only blank Parts count as unassigned, or should valid role-only Parts without named holders also appear?
+   The latter includes standalone roles, structured roles without names, and role references to Participants without names.
+3. **Participant list scope.**
+   Should the list cover one Program or the Programs linked to an Event?
+   An Event-wide list would use those linked Programs, optionally grouped by their dates; it would not introduce occurrences.
 
 ### Deferred capabilities
 
