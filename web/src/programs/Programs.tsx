@@ -24,6 +24,7 @@ export function Programs() {
   const [nodes, setNodes] = useState<ContentNode[]>([]);
   const [parts, setParts] = useState<DirectPart[]>([]);
   const [footerRoles, setFooterRoles] = useState<FooterRole[]>([]);
+  const [liveParts, setLiveParts] = useState<{ parts: DirectPart[]; footer: FooterRole[] }>();
   const [header, setHeader] = useState<Header>(blank);
   const [kept, setKept] = useState<Header>();
   const [errors, setErrors] = useState<HeaderErrors>({});
@@ -138,7 +139,7 @@ export function Programs() {
         <button className="primary" type="submit" disabled={busy || publishing || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
       </form>}
     </section>
-    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={(program, nextNodes) => { setSaved(program); setNodes(nextNodes); }} onDirtyChange={setRundownDirty} reload={load}/>}
-    {saved && <PartsEditor program={saved} nodes={nodes} initialParts={parts} initialFooter={footerRoles} onDirtyChange={setPartsDirty} onSaved={(program, nextParts, nextFooter) => { setSaved(program); setParts(nextParts); setFooterRoles(nextFooter); }} />}
+    {saved && <ContentEditor program={saved} initialNodes={nodes} parts={liveParts?.parts || parts} footer={liveParts?.footer || footerRoles} onSaved={(program, nextNodes) => { setSaved(program); setNodes(nextNodes); }} onDirtyChange={setRundownDirty} reload={load}/>}
+    {saved && <PartsEditor program={saved} nodes={nodes} initialParts={parts} initialFooter={footerRoles} onChange={(nextParts, nextFooter) => setLiveParts({ parts: nextParts, footer: nextFooter })} onDirtyChange={setPartsDirty} reload={load} onSaved={(program, nextParts, nextFooter) => { setSaved(program); setParts(nextParts); setFooterRoles(nextFooter); }} />}
   </>;
 }

@@ -3,6 +3,7 @@ export type DirectPart = {
   kind: 'blank' | 'text' | 'role' | 'structured'; value: string; role: string; name: string;
   extraInfo: string; intentionallyNotListed: boolean;
 };
+export type ListedPart = Omit<DirectPart, 'intentionallyNotListed'>;
 export type FooterRole = { id: string; title: string };
 
 export function validateParts(body: unknown, nodes: { id: string; kind: string }[]): string | null {

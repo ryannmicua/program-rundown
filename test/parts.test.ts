@@ -34,6 +34,10 @@ it('saves direct Parts, independent ticks, ordered Footer roles, and reloads the
     expect(await read()).toEqual(saved);
     expect((await send(`/${program.id}/content`, { version: 3, nodes: [nodes[0], nodes[2]] })).status).toBe(200);
     expect((await read()).parts.map((part: { id: string }) => part.id)).toEqual(['section-part', 'mini-part']);
+    expect((await send(`/${program.id}/publish`, {}, 'POST')).status).toBe(200);
+    const listing = await fetch(`${f.origin}/api/public/programs/${program.id}`).then(response => response.json());
+    expect(listing.parts).toEqual([parts[0], parts[2]].map(({ intentionallyNotListed, ...part }) => part));
+    expect(listing.footer).toEqual(footer);
     await f.restart();
     expect((await read()).footer).toEqual(footer);
   } finally { await f.close(); }

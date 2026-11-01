@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { contentLimits, moveSibling, type ContentNode } from '../../../src/domain/content.js';
 import type { Program } from '../../../src/domain/programs.js';
+import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
+import { ProgramRenderer } from '../programs/ProgramRenderer.js';
 
-export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, reload }: {
-  program: Program; initialNodes: ContentNode[]; onSaved(program: Program, nodes: ContentNode[]): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
+export function ContentEditor({ program, initialNodes, parts = [], footer = [], onSaved, onDirtyChange, reload }: {
+  program: Program; initialNodes: ContentNode[]; parts?: DirectPart[]; footer?: FooterRole[]; onSaved(program: Program, nodes: ContentNode[]): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
 }) {
   const [nodes, setNodes] = useState(initialNodes);
   const [kept, setKept] = useState<ContentNode[]>();
@@ -89,5 +91,6 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
         {dirty && <p>Unsaved rundown changes.</p>}
       </fieldset>
     </form>
+    <ProgramRenderer program={program} nodes={nodes} parts={parts} footer={footer} showHeading/>
   </section>;
 }

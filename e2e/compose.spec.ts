@@ -44,12 +44,12 @@ test('composes and reorders Sections and Items with pointer and keyboard control
     await expect(opening.getByLabel('Item label').nth(1)).toHaveValue('*Introit');
     await expect(opening.getByRole('group', { name: 'Item: *Introit', exact: true }).getByLabel('End time (optional)')).toHaveValue('09:10');
     await expect(opening.getByLabel('Start time (optional)').first()).toHaveValue('09:00');
-    const preview = page.getByRole('region', { name: 'Parts and Footer editor' }).getByRole('region', { name: 'Rundown preview' });
+    const preview = editor.getByRole('region', { name: 'Rundown preview' });
     await expect(preview.getByRole('listitem')).toHaveCount(3);
     for (const width of [1280, 768, 390]) {
       await page.setViewportSize({ width, height: 844 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.getByRole('region', { name: 'Parts and Footer editor' }).screenshot({ path: testInfo.outputPath(`compose-${width}.png`) });
+      await editor.screenshot({ path: testInfo.outputPath(`compose-${width}.png`) });
     }
     await closing.getByRole('button', { name: 'Remove Item', exact: true }).click();
     await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import type { Program } from '../../../src/domain/programs.js';
 import type { ContentNode } from '../../../src/domain/content.js';
 import { ProgramRenderer } from '../programs/ProgramRenderer.js';
-import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
+import type { FooterRole, ListedPart } from '../../../src/domain/parts.js';
 
-type Listing = { program: Program; nodes: ContentNode[]; parts: DirectPart[]; footer: FooterRole[] };
+type Listing = { program: Program; nodes: ContentNode[]; parts: ListedPart[]; footer: FooterRole[] };
 
 export function Reader() {
   const id = /^\/p\/(\d+)$/.exec(window.location.pathname)?.[1];

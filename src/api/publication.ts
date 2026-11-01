@@ -22,7 +22,8 @@ export function publicationRoutes(db: DatabaseSync, coordinator: RequestHandler)
       ? db.prepare(`SELECT ${programColumns} FROM programs p JOIN program_publications pub ON pub.program_id = p.id WHERE p.id = ?`).get(id)
       : undefined;
     if (!program) return res.status(404).json({ error: 'Published Program not found.' });
-    res.json({ program, nodes: readContent(db, id), ...readParts(db, id) });
+    const { parts, footer } = readParts(db, id);
+    res.json({ program, nodes: readContent(db, id), parts: parts.map(({ intentionallyNotListed, ...part }) => part), footer });
   });
   return router;
 }

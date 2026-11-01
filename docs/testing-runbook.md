@@ -174,10 +174,10 @@ The seed adds placeholder direct Parts, an intentionally unlisted tick, and a Fo
 2. Add a structured Song Leader with `Alex Placeholder`; add a parallel blank Part and tick **Intentionally not listed**.
 3. Add a Footer `Pianist` role with a text Participant, then save Parts and Footer.
 4. Reload and verify both assignments and the independent tick persisted.
-5. Verify the preview prints `Opening Song` bold, then the participant and Detail once beneath it.
+5. Verify the Rundown preview prints `Opening Song` bold, then the participant and Detail once beneath it. Edit the Item label without saving and verify the preview updates live.
 6. Publish and open the reader link. Verify the reader and print view use the same Part and Footer presentation.
 7. Remove a content target with a Part and save. Verify its orphaned Part is removed atomically.
-8. Open two tabs, save Parts in one, then attempt a stale Parts save in the other. Verify the stale write is rejected and its draft remains available.
+8. Open two tabs, save Parts in one, then attempt a stale Parts save in the other. Verify the stale write is rejected and editing locks until **Reload saved Program**. After reloading (or reopening the page), verify the saved Parts show and the stale draft stays separate behind **Reapply my Parts entries**.
 9. Run the explicit seed twice and confirm later Part, Footer, and Program edits remain unchanged.
 
 **Safe actions:** Automated tests use temporary databases and local placeholder identities.
@@ -187,8 +187,9 @@ The seed adds placeholder direct Parts, an intentionally unlisted tick, and a Fo
 **Verification commands:** `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, and `git diff --check`.
 Set `PLAYWRIGHT_OUTPUT_DIR` to a task-specific path outside the checkout for screenshots and failure traces.
 
-**Coverage:** `test/parts.test.ts` checks direct values, independent intentional ticks, Footer order, stale/invalid writes, restart persistence, and cleanup after content removal.
-`web/src/parts/PartsEditor.test.tsx` checks inline validation and session draft recovery.
+**Coverage:** `test/parts.test.ts` checks direct values, independent intentional ticks kept out of the public listing, Footer order, stale/invalid writes, restart persistence, and cleanup after content removal.
+`web/src/parts/PartsEditor.test.tsx` checks inline validation, session draft recovery, and stale draft review after a conflict.
+`web/src/editor/ContentEditor.test.tsx` checks the live preview of unsaved rundown edits with current Parts and escaped entered text.
 `web/src/programs/ProgramRenderer.test.tsx` checks shared preview formatting.
 `e2e/parts.spec.ts` checks coordinator editing, publishing, and reader rendering.
 

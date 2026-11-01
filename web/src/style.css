@@ -42,6 +42,7 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .header-fields [aria-invalid=true] { border-color: #9a3527; }
 .header-fields textarea { width: 100%; min-height: 6rem; resize: vertical; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; color: inherit; }
 .rundown-editor fieldset { min-width: 0; padding: 0; border: 0; }
+.parts-form { min-width: 0; padding: 0; border: 0; margin: 0; }
 .content-sections, .content-items { list-style: none; padding: 0; }
 .content-section { border: 1px solid #b5c6bf; border-radius: 6px; padding: 1rem; margin: 1.5rem 0; }
 .content-item { border-left: 3px solid #d6ded4; margin: 1.5rem 0; padding-left: 1rem; }

@@ -1,18 +1,14 @@
 import type { Program } from '../../../src/domain/programs.js';
 import type { ContentNode } from '../../../src/domain/content.js';
-import { displayDate, Rundown } from '../editor/Rundown.js';
-import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
+import { displayDate, participant, Rundown } from '../editor/Rundown.js';
+import type { FooterRole, ListedPart } from '../../../src/domain/parts.js';
 
 function displayTime(value: string) {
   const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }).format(new Date(`1970-01-01T${value}:00Z`));
   return time.replace(' AM', ' A.M.').replace(' PM', ' P.M.');
 }
 
-function participant(part: DirectPart) {
-  return part.kind === 'text' ? part.value : part.kind === 'role' ? part.role : part.kind === 'structured' ? part.name.trim() || part.role : '';
-}
-
-export function ProgramRenderer({ program, nodes, parts = [], footer = [], showHeading = false }: { program: Program; nodes: ContentNode[]; parts?: DirectPart[]; footer?: FooterRole[]; showHeading?: boolean }) {
+export function ProgramRenderer({ program, nodes, parts = [], footer = [], showHeading = false }: { program: Program; nodes: ContentNode[]; parts?: ListedPart[]; footer?: FooterRole[]; showHeading?: boolean }) {
   const date = program.date ? displayDate(program.date) : '';
   const time = program.startTime || program.endTime
     ? `${program.startTime ? displayTime(program.startTime) : ''}${program.startTime && program.endTime ? ' – ' : ''}${program.endTime ? displayTime(program.endTime) : ''}`
