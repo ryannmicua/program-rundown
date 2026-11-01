@@ -175,7 +175,7 @@ WORSHIP THROUGH HIS WORDS
 
 THE SPOKEN WORD                     DR. ALEX PLACEHOLDER  <- Section: heading + Part; block label "featured"
                          Education Director, Example Conference  <- Participant subtitle
-  Sermon title: A Life of Service                         <- Optional Part extra info
+  Sermon: A Life of Service                              <- Item: label + optional Detail
 
   Hymn of Consecration                      Congregation  <- Items in an unheaded closing Section
   Hymn of Hope     "The Mission"            Congregation
@@ -191,7 +191,7 @@ THE SPOKEN WORD                     DR. ALEX PLACEHOLDER  <- Section: heading + 
 Section order gives the sequence of groups; item order gives the sequence within a group.
 The closing Items illustrate an unheaded Section; their grouping does not require a printed heading.
 The leading `*` characters belong to the Item labels and have no separate modeled attribute.
-The added sermon-title line illustrates optional Part extra info; it is not from the sample.
+The added sermon line illustrates an Item label with optional Detail; it is not from the sample.
 The speaker's Participant definition carries role `Speaker`, name `Alex Placeholder`, and honorific `Dr.`.
 Its position is `Education Director` and its organization is `Example Conference`; these can form the displayed subtitle.
 Parts on `Invocation`, `THE SPOKEN WORD`, and `Benediction` can reference that Participant by role `Speaker`.
@@ -227,7 +227,7 @@ Ordering still describes the flow when no times are supplied.
 The [reference site's Daily Schedule](https://executivecommittee.adventist.asia/) runs from DAY 1, Tuesday, July 28, through DAY 5, Saturday, August 1.
 It lists Vesper on July 31 and separate Sabbath Morning and Sabbath Afternoon Programs on August 1.
 Its registration entry runs from noon to 4:30 p.m. and includes a venue; other entries carry message titles and descriptions.
-These fit optional start/end times and Part extra info.
+These fit optional start/end times and Item Detail.
 Listing a venue or an arrival activity describes the flow; it does not manage bookings, registration, or transport.
 
 This shortened outline adapts that schedule, using placeholder names, venues, and message titles.
@@ -241,11 +241,13 @@ Event: Example Conference (optional dates supplied: July 28–August 1)
          Header: DAY 1; date Tuesday, July 28
          Section: Arrival and Registration
            Item: Registration (start 12:00 noon; end 4:30 p.m.)
-             Part: Registration Host; extra info: description "Venue: Example Hotel"
+             Detail: Venue: Example Hotel
+             Part: Registration Host
          Section: Opening Ceremony (start 7:00 p.m.; end 9:00 p.m.)
            Section: Evening Worship
              Item: Keynote Message
-               Part: reference Participant by role Speaker; extra info: title "A Life of Service"
+               Detail: A Life of Service
+               Part: reference Participant by role Speaker
          Footer: Program Coordinator | Riley Placeholder
     2. Program: Day 2
          Header: DAY 2; date Wednesday, July 29
@@ -390,7 +392,7 @@ Item is the term for a within-section line; printed lines describe layout rather
 
 Attributes:
 
-- **Label** (required): what happens.
+- **Label** (required): what happens; shown as the entry's part title.
   Example: `Hymn of Celebration`, `Invocation`, `Offertory Prayer`.
 - **Detail** (optional): free text for the item's content, such as a hymn title, scripture reference, or note.
   The sample shows hymn titles in quotes and italics; this is a presentation convention.
@@ -400,6 +402,10 @@ Attributes:
 - **Part** (optional): the assignment of who performs the item; it may be blank.
   Example: `Congregation`, `Jamie Example`, `Speaker`.
 - **Start time** and **end time** (each optional): the item's own times; either may appear alone.
+
+Each program entry uses the existing Item label as its required title, Part as its optional participant, and Item Detail as its optional detail line.
+For example: title `Opening Song`, participant the song leader, detail `Amazing Grace, Hymn #321`.
+This mapping adds no new fields.
 
 Detail has no predefined kinds that determine its display.
 Characters such as the leading `*` in `*Introit` are simply part of the Item label.
@@ -433,11 +439,11 @@ A role used in a Part does not need to resolve to a named holder elsewhere in th
 `Speaker` remains valid even when the coordinator has not named a speaker in a Section or Footer.
 A standalone role value remains allowed alongside references to defined Participants.
 
-A Part may also include optional **Part extra info**: a title, topic, name, or description of the part being performed.
-Examples: sermon title `A Life of Service`, topic `Service in the Community`, or description `Venue: Example Hall`.
-The name of a part describes what is presented; a Participant's name identifies who presents it.
-Part extra info supplements the assignment and can accompany a blank Part value, without requiring a named Participant.
-An Item's Detail remains optional free text for the activity; adding Part extra info does not remove or restrict Detail.
+Retain optional **Part extra info** only for per-person notes on parallel Parts.
+For example, two song leaders can have separate notes `First verse` and `Second verse` while the Item Detail names the hymn once.
+The editor uses Item Detail for entry content such as a hymn title, sermon topic, or venue description.
+It must not offer Part extra info as a second detail line for the entry.
+A note may remain when its Part value is blank; extra info alone does not assign anyone.
 
 For coordinator review, an **unassigned Part** includes a blank Part value: no assignment has been supplied.
 Omitting the optional Part value also leaves no assignment; this does not require every Item or block to have one.
@@ -493,7 +499,7 @@ Example: `Morgan Pianist` performs `Offertory Music` and is also credited as `Pi
 
 A participant may carry an **honorific** and a **subtitle**, such as those shown in the Section labeled `featured`.
 Example: honorific `Dr.`, subtitle `Education Director, Example Conference`.
-The subtitle may combine position and organization; those details describe the person rather than the part's title, topic, name, or description.
+The subtitle may combine position and organization; those details describe the person rather than the Item's title or Detail.
 
 ### Participant list
 
@@ -576,7 +582,7 @@ For example, `THE SPOKEN WORD` is a Section heading; `featured` is an example bl
 The Section can show a Part with `Dr. Alex Placeholder` and the participant subtitle `Education Director, Example Conference`.
 It may also contain Items, like any other Section.
 The subtitle describes the participant's position or organization; an Item's Detail remains free text for that activity.
-A Part's optional title, topic, name, or description supplies extra information about the part being performed.
+Part extra info is reserved for per-person notes on parallel Parts; entry content belongs in Item Detail.
 
 ### Footer
 
@@ -648,7 +654,7 @@ There is no version history or new published version per edit.
 | Part | The optional assignment of who does an Item or leads a block; accepts blank, text, role, role with optional name, or a Participant reference | Role reference `Speaker` displays the Participant's name when available, otherwise `Speaker` |
 | Parallel Parts | Separate Parts at the same Item, block, or Footer spot, each retaining its value and extra info | Moving a second assignment onto `Prayer` keeps both |
 | Unassigned Part | A blank or omitted Part value, even with Part extra info, or a role-only value without a named holder | An empty Part on `Prayer`; role `Speaker` without a named holder |
-| Part extra info | Optional title, topic, name, or description of the part being performed | Sermon title `A Life of Service`; description `Venue: Example Hall` |
+| Part extra info | Optional per-person notes on parallel Parts, separate from Item Detail | Song leaders with notes `First verse` and `Second verse` |
 | Participant | A person defined once for reuse across Programs by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
 | Participant list | A coordinator's list of named Participants, text assignments, and roles awaiting a name, with source locations; Event-wide with a Program filter, or standalone | A shared `Jamie Example` definition with reading and prayer locations |
 | Participant reference | A Part identifies a defined Participant by name or by role | Name `Alex Placeholder` or role `Speaker` |
@@ -707,8 +713,8 @@ The earlier decisions remain in place, with the additional decisions below.
     The Event only links and lists Programs together, optionally grouped by their dates; event logistics remain outside this project.
     Use mini-programs only for a program within a single Program.
 12. **Part extra info.**
-    A Part may optionally include a title, topic, name, or description of the part being performed, including a venue description.
-    Item Detail remains free text and stays available.
+    Retain Part extra info only for per-person notes on parallel Parts.
+    Use Item Detail for the entry detail line; the editor must not duplicate it with a Part extra info field.
 13. **Participant extra info and reuse.**
     Define Participants once and share definitions between Programs, referencing them from Parts by name or by role (Q5).
     A Participant can carry a role and optional name, position, and organization, alongside the existing honorific and subtitle.
@@ -747,6 +753,17 @@ The earlier decisions remain in place, with the additional decisions below.
     Sharing grants no access to the source Program.
     A new Draft copies Parts in order with their extra info, but no Participant assignments or Header dates/times (T2).
     The new Program takes its own title and optional date; recurrence and copy-forward stay deferred.
+
+21. **Program entry fields.**
+    A program entry has a required title (Item label), optional participant (Part), and optional detail line (Item Detail).
+    Example: `Opening Song`, the song leader, and `Amazing Grace, Hymn #321`.
+    This maps onto existing concepts without adding fields.
+
+### Open product questions
+
+| ID | Question | Affected work |
+|---|---|---|
+| P1 | How should an intentionally unlisted participant interact with the unassigned-Parts review? No marker or change to the current blank/unassigned rules is decided. | U10 |
 
 ### Deferred capabilities
 

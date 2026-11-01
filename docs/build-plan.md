@@ -186,7 +186,7 @@ Offer an explicit dev-only reset later if useful; it must exclude feedback, iden
 | Sections and Items | `Call to Worship`, `The Spoken Word`, `*Introit`, `Prayer`, and `Closing Remarks`; include start-only, end-only, both, and neither. |
 | Participants | `Riley Placeholder` as coordinator credit, `Alex Placeholder` as Speaker, `Jamie Example` for reading/prayer, and `Morgan Pianist` for music. Reuse one definition across Programs; include distinct definitions with matching names. |
 | Assignment variants | Blank; extra-info-only; `Congregation`; `Pat Example and Lee Example`; standalone `Speaker`; structured role with/without a name; references by name/role. |
-| Participant details | `Dr.`, `Education Director`, `Example Conference`, and a subtitle on the Speaker; Part topic `A Life of Service` stays separate. |
+| Participant details | `Dr.`, `Education Director`, `Example Conference`, and a subtitle on the Speaker; Item Detail `A Life of Service` stays separate from per-person notes on parallel Parts. |
 | Publication | At least one Published and one Draft Program in an Event, demonstrating independent status and draft visibility rules. |
 
 The dev test user acts as coordinator without another role or manual grant step.
@@ -205,7 +205,8 @@ U13 adds sharing and import coverage with placeholder coordinator accounts in is
 Ship in the order below. Each slice includes its migration, API behavior, UI, seed extension, and tests; none is a database-only or UI-only milestone.
 U1 deliberately dedicates the walking skeleton to dev feedback, so feedback is its own early slice and is live on the first dev deploy.
 Program authoring begins in U2, independently of the feedback module.
-Q1–Q5 and T1–T2 are settled; no open product question blocks these slices.
+Q1–Q5 and T1–T2 are settled; template implementation is unblocked.
+How intentionally unlisted participants affect the U10 review remains open below; no marker or classification change is decided.
 This is the default delivery order. U10 and U11 can proceed from their listed dependencies independently of U9.
 
 ### 1. U1 — Deployed walking skeleton with isolated dev feedback
@@ -308,13 +309,19 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 
 **Goal and outcome:** The coordinator assigns, changes, and clears who leads Items, Sections, mini-programs, and Footer roles.
 
-**In:** Blank, text, role, and structured role/name Parts; independent extra info (title, topic, name, description); ordered Footer entries; editor, reader, and print rendering.
+**In:** Blank, text, role, and structured role/name Parts; ordered Footer entries; editor, reader, and print rendering.
+For each program entry, show a required title (existing Item label), optional participant (existing Part), and optional detail line (existing Item Detail).
+For example: `Opening Song`, a song leader, and `Amazing Grace, Hymn #321`. This mapping adds no new fields.
+Retain Part extra info only for per-person notes on parallel Parts; the editor must not offer it as a second entry detail line.
 Represent each spot as capable of holding independently editable parallel Parts; U9 introduces occupied-destination moves and copies.
 **Out:** Participant references, moving or copying assignments, and participant aggregation.
 
 **Acceptance and tests:**
 
 - Add, update, and clear every supported direct Part form on each eligible target; activity labels and Detail remain unchanged.
+- Save and reopen `Opening Song` with and without its optional participant and detail line; its required title uses the existing Item label validation.
+  Render `Amazing Grace, Hymn #321` once as Item Detail, not again as Part extra info.
+  Parallel Parts retain independent per-person notes without duplicating the entry detail line.
 - A structured name displays when supplied; an absent/blank name falls back to its role. Standalone roles remain valid.
 - Preserve `Congregation` and a multi-person text value without splitting names; extra info can accompany a blank value.
 - Footer credits do not become timed activities. A rejected assignment edit leaves previous content intact.
@@ -500,6 +507,10 @@ The captain settled Q1–Q3, Q5, and T1–T2; Q4 delegates the list design to th
 | T1 | Any coordinator can save a managed Program as a template owned by their account and usable across all their Events. Sharing makes the template visible to other coordinators, who must copy/import it as an independent template in their own account, never link to it. Sharing grants no rights to the source Program. | U12, U13 |
 | T2 | A new Program copies Parts in order with their extra info, but no Participant assignments. Header dates/times do not carry over; the new Program takes its own title and optional date. | U12 creation preview and carry-over; U13 imports |
 
+Each program entry uses three existing concepts: required title = Item label, optional participant = Part, optional detail line = Item Detail.
+For example, `Opening Song` can list a song leader and the detail `Amazing Grace, Hymn #321`.
+U6 retains Part extra info only for per-person notes on parallel Parts, avoiding a duplicate entry detail field.
+
 Q4 groups only explicit shared identities, so matching names cannot merge different people.
 Text assignments preserve names and groups without requiring individual records or parsing a group string.
 `Awaiting a name` keeps role placeholders visible without treating them as named people.
@@ -507,7 +518,11 @@ Every group links back to source Parts, so the coordinator can act on the list.
 
 ## Open product questions
 
-None. Q1–Q5 and T1–T2 are settled above.
+Q1–Q5 and T1–T2 are settled above. One participant-review question remains open.
+
+| ID | Question | Affected work |
+| --- | --- | --- |
+| P1 | How should an intentionally unlisted participant interact with the unassigned-Parts review? No marker or change to the current blank/unassigned rules is decided. | U10 |
 
 Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.
