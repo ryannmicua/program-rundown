@@ -86,6 +86,15 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .parts-editor .part-target h4 { margin-top: 0; }
 .part-participant, .part-extra-info { margin: .2rem 0 0; }
 .part-participant { font-size: .94rem; }
+.participant-subtitle { margin: .1rem 0 0; color: #607771; font-size: .84rem; }
+.participant-manager { border-top: 1px solid #d6ded4; border-bottom: 1px solid #d6ded4; padding: 1rem 0; margin: 1.5rem 0; }
+.participant-manager form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: .8rem; }
+.participant-manager form h4, .participant-manager form > div, .participant-manager form > button { grid-column: 1 / -1; }
+.participant-manager label { display: grid; gap: .35rem; font-weight: 600; }
+.participant-manager input { min-width: 0; width: 100%; padding: .6rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
+.participant-manager ul { padding-left: 1.25rem; }
+.participant-manager li { margin: .75rem 0; overflow-wrap: anywhere; }
+.participant-manager small { display: block; color: #607771; }
 .part-extra-info { color: #607771; font-size: .86rem; white-space: pre-wrap; }
 .program-footer { margin-top: 2.5rem; border-top: 1px solid #b5c6bf; padding-top: 1rem; }
 .program-footer h2 { text-align: center; }

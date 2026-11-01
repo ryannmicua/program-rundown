@@ -196,7 +196,7 @@ It makes that identity coordinator of every demo Program and, from U8, every dem
 Do not hardcode or commit a real issuer/subject mapping, login, or credential in fixtures.
 Footer coordinator credits are display text and do not grant access.
 Do not seed unsupported future structures early: U1 has an empty product collection and working feedback; U2 adds Program headers; later slices add their fixtures.
-Full demo events, programs, parts, and participants become available by U8.
+U7 seeds selected reusable Participant definitions and references on the existing demo Programs; full Event fixtures arrive in U8.
 U9–U11 extend those fixtures for parallel Parts, both copy options, unassigned review, and participant-list verification.
 U12 adds an owned template saved from a demo Program and reused across Events.
 U13 adds sharing and import coverage with placeholder coordinator accounts in isolated tests; the deployed demo retains its single test user.

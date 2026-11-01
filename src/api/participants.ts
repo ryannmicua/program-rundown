@@ -1,0 +1,57 @@
+import { Router, type RequestHandler } from 'express';
+import type { DatabaseSync } from 'node:sqlite';
+
+type Definition = { role: string; name: string; honorific: string; position: string; organization: string; subtitle: string };
+const fields: (keyof Definition)[] = ['role', 'name', 'honorific', 'position', 'organization', 'subtitle'];
+function validate(value: unknown): { data?: Definition; error?: string } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { error: 'Enter Participant details.' };
+  const body = value as Record<string, unknown>;
+  if (Object.keys(body).some(key => !fields.includes(key as keyof Definition))) return { error: 'Use the Participant fields shown.' };
+  for (const key of fields) if (typeof body[key] !== 'string' || (body[key] as string).length > 200) return { error: 'Participant fields must contain up to 200 characters.' };
+  if (!(body.role as string).trim()) return { error: 'Enter a role for this Participant.' };
+  return { data: Object.fromEntries(fields.map(key => [key, (body[key] as string).trim()])) as Definition };
+}
+function read(db: DatabaseSync, ownerId: number, id?: number) {
+  const sql = `SELECT d.id, d.role, d.name, d.honorific, d.position, d.organization, d.subtitle,
+    (SELECT json_group_array(json_object('id', used.id, 'title', used.title, 'status', used.status)) FROM (SELECT DISTINCT p.id, p.title, CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = p.id) THEN 'Published' ELSE 'Draft' END AS status FROM parts x JOIN programs p ON p.id = x.program_id WHERE x.participant_id = d.id AND p.owner_id = d.owner_id) used) AS programs
+    FROM participants d WHERE d.owner_id = ? ${id ? 'AND d.id = ?' : ''} ORDER BY d.role COLLATE NOCASE, d.name COLLATE NOCASE, d.id`;
+  return (id ? db.prepare(sql).get(ownerId, id) : db.prepare(sql).all(ownerId)) as { id: number; role: string; name: string; honorific: string; position: string; organization: string; subtitle: string; programs: string } | undefined;
+}
+function serialize(row: any) { return row ? { ...row, programs: typeof row.programs === 'string' ? JSON.parse(row.programs || '[]') : row.programs } : row; }
+export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler) {
+  const router = Router();
+  router.use('/api/participants', coordinator);
+  router.get('/api/participants', (_req, res) => {
+    const participants = db.prepare(`SELECT d.id, d.role, d.name, d.honorific, d.position, d.organization, d.subtitle,
+      (SELECT json_group_array(json_object('id', used.id, 'title', used.title, 'status', used.status)) FROM (SELECT DISTINCT p.id, p.title, CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = p.id) THEN 'Published' ELSE 'Draft' END AS status FROM parts x JOIN programs p ON p.id = x.program_id WHERE x.participant_id = d.id AND p.owner_id = d.owner_id) used) AS programs
+      FROM participants d WHERE d.owner_id = ? ORDER BY d.role COLLATE NOCASE, d.name COLLATE NOCASE, d.id`).all(res.locals.user.id);
+    res.json({ participants: participants.map((row: any) => ({ ...row, programs: JSON.parse(row.programs || '[]') })) });
+  });
+  router.post('/api/participants', (req, res) => {
+    const result = validate(req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    const d = result.data!;
+    const saved = db.prepare('INSERT INTO participants (owner_id, role, name, honorific, position, organization, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?)').run(res.locals.user.id, d.role, d.name, d.honorific, d.position, d.organization, d.subtitle);
+    res.status(201).json({ participant: serialize(read(db, res.locals.user.id, Number(saved.lastInsertRowid))) });
+  });
+  router.patch('/api/participants/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const current = Number.isSafeInteger(id) && id > 0 ? read(db, res.locals.user.id, id) : undefined;
+    if (!current) return res.status(404).json({ error: 'Participant not found.' });
+    const result = validate(req.body);
+    if (result.error) return res.status(400).json({ error: result.error });
+    const d = result.data!;
+    db.prepare('UPDATE participants SET role = ?, name = ?, honorific = ?, position = ?, organization = ?, subtitle = ? WHERE id = ? AND owner_id = ?').run(d.role, d.name, d.honorific, d.position, d.organization, d.subtitle, id, res.locals.user.id);
+    const updated = read(db, res.locals.user.id, id)!;
+    res.json({ participant: serialize(updated) });
+  });
+  router.delete('/api/participants/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const current = Number.isSafeInteger(id) && id > 0 ? read(db, res.locals.user.id, id) : undefined;
+    if (!current) return res.status(404).json({ error: 'Participant not found.' });
+    try { db.prepare('DELETE FROM participants WHERE id = ? AND owner_id = ?').run(id, res.locals.user.id); }
+    catch { return res.status(409).json({ error: 'This Participant is in use. Remove its references before deleting it.' }); }
+    res.status(204).end();
+  });
+  return router;
+}
