@@ -207,7 +207,7 @@ Ship in the order below. Each slice includes its migration, API behavior, UI, se
 U1 deliberately dedicates the walking skeleton to dev feedback, so feedback is its own early slice and is live on the first dev deploy.
 Program authoring begins in U2, independently of the feedback module.
 Q1–Q5 and T1–T2 are settled; template implementation is unblocked.
-How intentionally unlisted participants affect the U10 review remains open below; no marker or classification change is decided.
+P1 settles that intentionally unlisted Parts are excluded from U10 review, while blank Parts without the tick remain unassigned.
 This is the default delivery order. U10 and U11 can proceed from their listed dependencies independently of U9.
 
 ### 1. U1 — Deployed walking skeleton with isolated dev feedback

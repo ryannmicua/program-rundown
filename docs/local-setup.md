@@ -45,6 +45,7 @@ That Program has the subtitle `A day of gratitude` and a nested rundown: a `feat
 It also creates two date-grouped Events with placeholder rundowns: `Sabbath` (Vesper, Sabbath School, Divine Worship, and AY across two weeks, some published) and `Example Conference` (two dated sessions plus an undated `Conference Welcome`).
 It saves `Example Worship Template` from `Community Gathering` once for the configured coordinator.
 Some Event Programs have a placeholder Part ready to move or copy, plus an Item that already holds two parallel Parts.
+The `Divine Worship` Program also gets a blank Part with only extra info, so it appears in the review of assignments awaiting a name.
 The seed uses placeholder names only and never opens feedback storage.
 The configured coordinator owns every demo Program and Event and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, Participant definitions, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
@@ -171,6 +172,16 @@ See the [Participant list design](concepts.md#participant-list) for grouping and
 | --- | --- |
 | `GET /api/events/:id/participants` | List assignments across an owned Event's Programs; optional `programId` limits it to one linked Program. Other Events and unlinked Programs return 404. |
 | `GET /api/programs/:id/participants` | List assignments for one Program you can manage; inaccessible Programs return 404. |
+
+## Review assignments awaiting a name
+
+Choose **Assignments awaiting a name** in the coordinator workspace navigation, or open `/assignments`.
+The list shows every Part, across Programs you can manage, that still needs a named assignment: blank Parts, extra-info-only Parts, and roles or Participant references without a name.
+Parts ticked **Intentionally not listed** are left out; untick and save to return one to the list.
+Search or choose a **Program** to narrow the list, then choose **Open Program editor** to jump to that Part's Item, block, or Footer role.
+The list reloads when you return to the tab; choose **Refresh list** to reload it manually.
+
+`GET /api/unassigned` returns `parts` awaiting a name and the accessible `programs` for the filter.
 
 ## Run the container
 

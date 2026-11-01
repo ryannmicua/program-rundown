@@ -10,6 +10,7 @@ They can publish a Program to a reader link that anyone can open and print witho
 They can group complete Programs under an optional Event, ordered and optionally grouped by date, with a reader link that lists only its Published Programs.
 They can save a Program as a template owned by their account and create new Drafts from it across their Events, without copying people or Header dates and times.
 They can share a template with other coordinators, who import it as an independent copy in their own account.
+They can review Parts still awaiting a named assignment across their Programs and open each one in its editor.
 The signed-in shell also provides optional dev feedback.
 
 Use Node.js 24. Install with `npm ci`, then run `npm run build`.

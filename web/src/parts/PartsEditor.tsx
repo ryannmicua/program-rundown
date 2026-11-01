@@ -196,7 +196,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   }
   function renderTarget(node: ContentNode) {
     const title = node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'item' ? 'New Item' : 'Untitled mini-program');
-    return <section className="part-target" key={node.id} aria-label={`Participants for ${title}`}><h4>{title}</h4>{partEditor(node.id, node.kind)}</section>;
+    return <section className="part-target" id={`part-target-${node.kind}-${node.id}`} key={node.id} aria-label={`Participants for ${title}`}><h4>{title}</h4>{partEditor(node.id, node.kind)}</section>;
   }
   return <section className="card parts-editor" aria-label="Parts and Footer editor">
     <h2>Parts and Footer roles</h2>
@@ -232,7 +232,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     {!nodes.length && <p>Add a Section or mini-program in the Rundown editor to assign participants.</p>}
     <div>{nodes.map(renderTarget)}</div>
     <section className="footer-role-editor" aria-label="Footer standing roles"><h3>Footer standing roles</h3>
-      {footer.map((role, index) => <div className="part-target" key={role.id}>
+      {footer.map((role, index) => <div className="part-target" id={`part-target-footer-${role.id}`} key={role.id}>
         <label>Footer role title<input aria-label="Footer role title" required maxLength={200} value={role.title} aria-invalid={invalidId === role.id} aria-describedby={invalidId === role.id ? `footer-error-${role.id}` : undefined} onChange={event => { setFooter(current => current.map(entry => entry.id === role.id ? { ...entry, title: event.target.value } : entry)); setDirty(true); setInvalidId(''); }}/>{invalidId === role.id && <span className="field-error" id={`footer-error-${role.id}`}>Enter a Footer role title.</span>}</label>
         <div className="node-actions"><button type="button" disabled={index === 0} onClick={() => { setFooter(current => { const next = [...current]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; }); setDirty(true); }}>Move role up</button><button type="button" disabled={index === footer.length - 1} onClick={() => { setFooter(current => { const next = [...current]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; }); setDirty(true); }}>Move role down</button><button type="button" onClick={() => { setFooter(current => current.filter(entry => entry.id !== role.id)); setParts(current => current.filter(part => part.targetId !== role.id)); setDirty(true); }}>Remove role</button></div>
         {partEditor(role.id, 'footer')}
