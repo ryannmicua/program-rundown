@@ -34,7 +34,7 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
             : data.error || 'Could not save. Your rundown entries are kept.');
         return;
       }
-      onSaved(data.program); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
+      onSaved(data.program); onDirtyChange(false); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
     } catch { setError('Could not connect. Your rundown entries are kept. Try again.'); }
     finally { setBusy(false); }
   }
