@@ -29,7 +29,7 @@ export function Programs() {
   const [kept, setKept] = useState<Header>();
   const [errors, setErrors] = useState<HeaderErrors>({});
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(() => new URLSearchParams(window.location.search).get('created') === 'template' ? 'Draft created from template. Review the rundown and save your changes when ready.' : '');
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const [slowLoading, setSlowLoading] = useState(false);
@@ -37,6 +37,10 @@ export function Programs() {
   const [publishing, setPublishing] = useState(false);
   const [rundownDirty, setRundownDirty] = useState(false);
   const [partsDirty, setPartsDirty] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [templateMessage, setTemplateMessage] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [slowTemplateSave, setSlowTemplateSave] = useState(false);
   const headerDirty = Boolean(saved && (['title', 'subtitle', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key]));
   const unsaved = headerDirty || rundownDirty || partsDirty;
 
@@ -56,6 +60,20 @@ export function Programs() {
       setMessage('Program published. Anyone with the link can read and print it.');
     } catch { setPublishError('Could not connect. Your Program is unchanged. Try again.'); }
     finally { setPublishing(false); }
+  }
+
+  async function saveTemplate(event: FormEvent) {
+    event.preventDefault();
+    if (!saved || unsaved) return;
+    setSavingTemplate(true); setSlowTemplateSave(false); setTemplateMessage('');
+    const timer = window.setTimeout(() => setSlowTemplateSave(true), 1800);
+    try {
+      const response = await fetch('/api/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ programId: saved.id, name: templateName }) });
+      const data = await response.json();
+      if (!response.ok) { setTemplateMessage(response.status === 401 ? 'Your session ended. Your Program and template name remain on this page. Sign in again, then save the template.' : response.status === 403 ? 'Coordinator access is required. Sign in with an authorized coordinator account.' : response.status === 404 ? 'This Program is unavailable to your account. Open a Program you manage, or sign in with its coordinator account.' : data.error || 'Could not save the template. Try again.'); return; }
+      setTemplateName(''); setTemplateMessage(`${data.template.name} saved. You can use it across your Events.`);
+    } catch { setTemplateMessage(window.navigator.onLine ? 'Could not connect. Your Program is unchanged. Try again.' : 'You are offline. Your Program is unchanged. Reconnect, then try again.'); }
+    finally { window.clearTimeout(timer); setSavingTemplate(false); setSlowTemplateSave(false); }
   }
 
   async function load() {
@@ -105,7 +123,7 @@ export function Programs() {
   }
 
   if (!detail) return <section className="card">
-    <div className="program-heading"><h2>{programs?.length ? 'Your Programs' : programs ? 'No programs yet' : 'Your Programs'}</h2><a className="primary" href="/programs/new">New Program</a></div>
+    <div className="program-heading"><h2>{programs?.length ? 'Your Programs' : programs ? 'No programs yet' : 'Your Programs'}</h2><div><a href="/templates">Your templates</a> <a className="primary" href="/programs/new">New Program</a></div></div>
     {error && <p role="alert">{error} <button onClick={load} disabled={busy}>Try again</button>{error.startsWith('Your session ended') && <> <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a></>}</p>}
     {!programs && !error && <><p role="status">{slowLoading ? 'Still loading Programs… Your saved work will appear as soon as it arrives.' : 'Loading Programs…'}</p>{slowLoading && <div className="loading-progress" aria-hidden="true"/>}</>}
     {programs?.length === 0 && <p>Create a Draft with a title. You can add a date or either time whenever you’re ready.</p>}
@@ -117,7 +135,9 @@ export function Programs() {
     <section className="card program-editor">
       <p className="eyebrow">Standalone Program · {saved?.status || 'Draft'}</p>
       <h2>{creating ? 'New Program' : saved ? 'Program settings' : 'Open Draft'}</h2>
+      {creating && <p><a href="/templates">Use a saved template</a></p>}
       {saved && <HeaderSummary header={saved}/>}
+      {saved && <form className="template-save template-form" onSubmit={saveTemplate}><h3>Save as template</h3><p>Save this Program's structure and details for reuse. Participant assignments and Header dates and times are left out.</p><label htmlFor="template-name">Template name</label><input id="template-name" required maxLength={200} value={templateName} onChange={event => setTemplateName(event.target.value)}/><button type="submit" disabled={savingTemplate || unsaved}>{savingTemplate ? slowTemplateSave ? 'Still saving template…' : 'Saving template…' : 'Save as template'}</button>{unsaved && <p>Save your Header, rundown, and Parts and Footer changes before saving a template.</p>}{slowTemplateSave && <><p role="status">This is taking longer than usual. Your Program remains saved.</p><div className="loading-progress" aria-hidden="true"/></>}{templateMessage && <p role={templateMessage.includes('saved.') ? 'status' : 'alert'}>{templateMessage}{templateMessage.startsWith('Your session ended') && <> <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a></>}</p>}</form>}
       {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{!creating && (!saved || conflict) && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
       {message && <p role="status">{message}</p>}
       {publishError && <p role="alert">{publishError} <button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>Try again</button></p>}

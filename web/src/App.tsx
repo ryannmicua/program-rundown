@@ -3,11 +3,13 @@ import { Programs } from './programs/Programs.js';
 import { Reader } from './reader/Reader.js';
 import { Events } from './events/Events.js';
 import { EventReader } from './events/EventReader.js';
+import { Templates } from './templates/Templates.js';
 const Feedback = lazy(() => import('./feedback/Feedback.js'));
 type Session = { user: { label: string; coordinator: boolean } | null; feedbackEnabled: boolean };
 export function App() {
   if (window.location.pathname.startsWith('/e/')) return <EventReader/>;
   if (window.location.pathname.startsWith('/events')) return <WorkspaceApp><Events/></WorkspaceApp>;
+  if (window.location.pathname.startsWith('/templates')) return <WorkspaceApp><Templates/></WorkspaceApp>;
   if (window.location.pathname.startsWith('/p/')) return <Reader/>;
   return <WorkspaceApp/>;
 }
