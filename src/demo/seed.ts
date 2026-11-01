@@ -1,6 +1,9 @@
 import { openProduct } from '../db/product.js';
-import { writeContent } from '../api/content.js';
+import { readContent, writeContent } from '../api/content.js';
 import type { ContentNode } from '../domain/content.js';
+import { createTemplateSnapshot } from '../domain/templates.js';
+import { readParts } from '../api/parts.js';
+import type { DirectPart } from '../domain/parts.js';
 
 // Explicit dev-only seed. Stable keys preserve coordinator edits; never open feedback.
 export function seedProduct(env = process.env) {
@@ -123,6 +126,12 @@ export function seedProduct(env = process.env) {
         db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(published.id);
       }
       db.prepare('INSERT INTO demo_participant_seeds VALUES (?)').run(published.id);
+    }
+    if (!db.prepare('SELECT 1 FROM demo_template_seeds WHERE owner_id = ?').get(identity.id)) {
+      const source = db.prepare("SELECT id FROM programs WHERE seed_key = 'standalone-community-gathering'").get() as { id: number };
+      const currentParts = readParts(db, source.id);
+      const result = db.prepare("INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, 'Example Worship Template', ?)").run(identity.id, JSON.stringify(createTemplateSnapshot(readContent(db, source.id), currentParts.parts as unknown as DirectPart[], currentParts.footer)));
+      db.prepare('INSERT INTO demo_template_seeds (owner_id, template_id) VALUES (?, ?)').run(identity.id, Number(result.lastInsertRowid));
     }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }

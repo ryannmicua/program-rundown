@@ -38,6 +38,10 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .event-name-form { display: grid; gap: .65rem; max-width: 32rem; margin: 1rem 0; }
 .event-name-form input { width: 100%; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
 .event-create input, .event-dates input { width: 100%; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
+.template-form { display: grid; gap: .65rem; max-width: 38rem; margin: 1.5rem 0; }
+.template-form input, .template-form select { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; background: white; font: inherit; }
+.template-form [aria-invalid=true] { border-color: #9a3527; }
+.template-save { border-top: 1px solid #d6ded4; padding-top: 1rem; }
 .event-toggle, .event-program-option { display: flex; align-items: center; gap: .6rem; margin: 1rem 0; }
 .event-program-option { padding: .4rem 0; }
 .event-reader-group { border-top: 1px solid #d6ded4; padding: 1rem 0; }

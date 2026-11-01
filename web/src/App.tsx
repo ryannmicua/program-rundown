@@ -3,11 +3,13 @@ import { Programs } from './programs/Programs.js';
 import { Reader } from './reader/Reader.js';
 import { Events } from './events/Events.js';
 import { EventReader } from './events/EventReader.js';
+import { Templates } from './templates/Templates.js';
 const Feedback = lazy(() => import('./feedback/Feedback.js'));
 type Session = { user: { label: string; coordinator: boolean } | null; feedbackEnabled: boolean };
 export function App() {
   if (window.location.pathname.startsWith('/e/')) return <EventReader/>;
   if (window.location.pathname.startsWith('/events')) return <WorkspaceApp><Events/></WorkspaceApp>;
+  if (window.location.pathname.startsWith('/templates')) return <WorkspaceApp><Templates/></WorkspaceApp>;
   if (window.location.pathname.startsWith('/p/')) return <Reader/>;
   return <WorkspaceApp/>;
 }
@@ -29,7 +31,7 @@ function WorkspaceApp({ children }: { children?: React.ReactNode }) {
       {error && <p role="alert">{error}</p>}
       {!session && !error && <p role="status">Connecting…</p>}
       {session && !session.user && <section className="card"><h2>Welcome to Program Rundown</h2><p>Sign in to open your workspace.</p><a id="sign-in" className="primary" href="/auth/login">Sign in</a></section>}
-      {session?.user && <><p className="eyebrow">{session.user.label}</p>{session.user.coordinator ? children || <><Programs/><Events embedded/></> : <section className="card"><h2>Coordinator access is required</h2><p>This account cannot manage Programs. Sign out, then sign in with the configured coordinator account.</p></section>}</>}
+      {session?.user && <><p className="eyebrow">{session.user.label}</p>{session.user.coordinator ? children || <><p><a href="/templates">Your templates</a></p><Programs/><Events embedded/></> : <section className="card"><h2>Coordinator access is required</h2><p>This account cannot manage Programs. Sign out, then sign in with the configured coordinator account.</p></section>}</>}
       {session?.feedbackEnabled && session.user?.coordinator && <a href="/feedback">View feedback notes →</a>}
     </main>
     <footer>Program Rundown <span>Made for the moments we share.</span></footer>
