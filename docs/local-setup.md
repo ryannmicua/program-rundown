@@ -42,10 +42,11 @@ It adds ordered Sections and Items, including an unheaded closing Section, liter
 It also creates `Example Published Program`, already published, so its `/p/<id>` reader link works without signing in.
 That Program has the subtitle `A day of gratitude` and a nested rundown: a `featured` Section containing the `Morning Service` mini-program (with a `Dedication` Section) and a `Closing Program` mini-program with an unheaded labelled Section.
 `Community Gathering` includes an Alex Placeholder definition reused in another Program, direct Parts, an intentionally unlisted Part, and an ordered `Pianist` Footer role.
+It also creates two date-grouped Events with placeholder rundowns: `Sabbath` (Vesper, Sabbath School, Divine Worship, and AY across two weeks, some published) and `Example Conference` (two dated sessions plus an undated `Conference Welcome`).
 The seed uses placeholder names only and never opens feedback storage.
-The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
+The configured coordinator owns every demo Program and Event and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, Participant definitions, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
-If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs and seed-owned Participant definitions.
+If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs, demo Events, and seed-owned Participant definitions.
 Startup applies additive product migrations; startup and deployment never reset or seed data.
 
 ## Create and reopen a Draft
@@ -54,7 +55,8 @@ Sign in as the configured coordinator and choose **New Program**. Enter a title 
 Date, start time, and end time are independently optional. Times use local clock values; the app does not infer a duration.
 Open a saved Program from **Your Programs** or its `/programs/<id>` URL. Its Header survives sign-out and app restart.
 Standalone Draft access belongs to its creating coordinator; another identity cannot list, read, or edit it.
-Event coordination will grant access to linked Programs when Events arrive in U8.
+The coordinator of an Event can also list, read, and edit every Program linked to it, including Drafts.
+Only the coordinator who created a Participant definition can edit or delete it; others who manage a Program using it can still choose it for Parts.
 
 If another tab saves first, the editor keeps your entries and reports a conflict.
 Choose **Reload saved Draft** to see the latest Header. Your unsaved entries remain visible.
@@ -62,7 +64,7 @@ Choose **Reapply my entries**, review the Header, then **Save Draft** to save ag
 
 | Endpoint | Behavior |
 | --- | --- |
-| `GET /api/programs` | List the signed-in coordinator's standalone Programs. |
+| `GET /api/programs` | List Programs the signed-in coordinator owns or manages through an Event they own. |
 | `POST /api/programs` | Create a Draft with `title` and optional `date`, `startTime`, and `endTime`. |
 | `GET /api/programs/:id` | Read an owned Program Header, its `status` (`Draft` or `Published`), its `version`, and ordered content `nodes`. |
 | `PATCH /api/programs/:id` | Edit Header fields with the last read `version`; stale versions return 409 without writing. |
@@ -96,6 +98,27 @@ Save the Header and rundown, then choose **Publish Program**. Publishing stays d
 The editor then shows the reader link, `/p/<id>`. Anyone with the link can read the Program without signing in; there is no public directory.
 Later saves replace the content at the same link, without version history or another publish step.
 Readers choose **Print** or use browser printing; the printed listing omits editor and feedback controls.
+
+## Group Programs under an Event
+
+Use the **Events** section on the signed-in home page, or open `/events`, enter a name, and choose **Create Event**. Start and end dates are optional.
+Open the Event, select saved Programs under **Add or remove Programs**, order them with **Move up** or **Move down**, then choose **Save Program order and links**.
+**Unlink** removes a Program from the list; saving unlinks it, and it keeps its own coordinator and publication status.
+A Program belongs to at most one Event; linking it to a second Event returns 409 until it is unlinked from the first.
+Tick **Group Programs by their dates** to group by each Program's own date, with undated Programs in an `Undated` group; otherwise the list stays in saved order.
+
+The Event's reader link, `/e/<id>`, lists only its Published Programs to anyone without signing in; Drafts never appear.
+Each listed Program opens at `/e/<id>/p/<programId>`, with the same presentation as `/p/<id>`.
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/events` | List the signed-in coordinator's Events, each with its ordered `programs`. |
+| `POST /api/events` | Create an Event with `name` and optional `startDate`, `endDate`, and `groupByDate`. |
+| `GET /api/events/:id` | Read an owned Event and its ordered `programs`, including Drafts. |
+| `PATCH /api/events/:id` | Edit Event fields; omitted fields retain their values. The end date must not precede the start date. |
+| `PUT /api/events/:id/programs` | Replace the linked Programs with an ordered `programIds` list; Programs omitted from the list are unlinked. |
+| `GET /api/public/events/:id` | Anonymous read of an Event and its Published Programs only. |
+| `GET /api/public/events/:id/programs/:programId` | Anonymous read of a Published Program linked to that Event; Drafts and other Programs return 404. |
 
 ## Run the container
 
