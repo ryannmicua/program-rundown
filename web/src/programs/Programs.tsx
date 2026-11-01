@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Header, HeaderErrors, Program } from '../../../src/domain/programs.js';
 import { contentLimits, type ContentNode } from '../../../src/domain/content.js';
 import { ContentEditor } from '../editor/ContentEditor.js';
+import { PartsEditor } from '../parts/PartsEditor.js';
+import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
 
 const blank: Header = { title: '', subtitle: '', date: null, startTime: null, endTime: null };
 function HeaderSummary({ header }: { header: Header }) {
@@ -20,6 +22,8 @@ export function Programs() {
   const [programs, setPrograms] = useState<Program[]>();
   const [saved, setSaved] = useState<Program>();
   const [nodes, setNodes] = useState<ContentNode[]>([]);
+  const [parts, setParts] = useState<DirectPart[]>([]);
+  const [footerRoles, setFooterRoles] = useState<FooterRole[]>([]);
   const [header, setHeader] = useState<Header>(blank);
   const [kept, setKept] = useState<Header>();
   const [errors, setErrors] = useState<HeaderErrors>({});
@@ -31,8 +35,9 @@ export function Programs() {
   const [publishError, setPublishError] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [rundownDirty, setRundownDirty] = useState(false);
+  const [partsDirty, setPartsDirty] = useState(false);
   const headerDirty = Boolean(saved && (['title', 'subtitle', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key]));
-  const unsaved = headerDirty || rundownDirty;
+  const unsaved = headerDirty || rundownDirty || partsDirty;
 
   async function publish() {
     if (!saved || unsaved) return;
@@ -67,7 +72,7 @@ export function Programs() {
       }
       if (id) {
         if (headerDirty) setKept({ ...header });
-        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []);
+        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []); setParts(data.parts || []); setFooterRoles(data.footer || []);
       } else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
     } catch { setError(window.navigator.onLine ? 'Could not connect. Try again.' : 'You are offline. Reconnect, then try again.'); }
@@ -133,6 +138,7 @@ export function Programs() {
         <button className="primary" type="submit" disabled={busy || publishing || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
       </form>}
     </section>
-    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={setSaved} onDirtyChange={setRundownDirty} reload={load}/>}
+    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={(program, nextNodes) => { setSaved(program); setNodes(nextNodes); }} onDirtyChange={setRundownDirty} reload={load}/>}
+    {saved && <PartsEditor program={saved} nodes={nodes} initialParts={parts} initialFooter={footerRoles} onDirtyChange={setPartsDirty} onSaved={(program, nextParts, nextFooter) => { setSaved(program); setParts(nextParts); setFooterRoles(nextFooter); }} />}
   </>;
 }

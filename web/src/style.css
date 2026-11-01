@@ -76,6 +76,22 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .reader-listing .preview-section li { margin: 2rem auto; text-align: center; }
 .reader-listing .preview-section li strong { display: block; line-height: 1.5; }
 .reader-listing .preview-section li .note-text { margin: .35rem auto 0; }
+.part-fields, .part-target { border: 1px solid #d6ded4; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+.part-fields { display: grid; gap: .75rem; }
+.part-fields label, .part-target > label { display: grid; gap: .35rem; font-weight: 600; }
+.part-fields input:not([type=checkbox]), .part-fields select, .part-fields textarea, .part-target input { min-width: 0; width: 100%; padding: .6rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
+.part-fields textarea { min-height: 4rem; }
+.part-fields label:has(input[type=checkbox]) { display: flex; align-items: center; }
+.parts-editor .part-target h4 { margin-top: 0; }
+.part-participant, .part-extra-info { margin: .2rem 0 0; }
+.part-participant { font-size: .94rem; }
+.part-extra-info { color: #607771; font-size: .86rem; white-space: pre-wrap; }
+.program-footer { margin-top: 2.5rem; border-top: 1px solid #b5c6bf; padding-top: 1rem; }
+.program-footer h2 { text-align: center; }
+.program-footer dl { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem 2rem; }
+.program-footer dl > div { min-width: min(100%, 12rem); text-align: center; }
+.program-footer dt { font-weight: 700; }
+.program-footer dd { margin: .4rem 0 0; }
 .reader-listing .preview-section .preview-section { border-top: 1px solid #d6ded4; padding-top: 1rem; }
 .reader-listing .preview-mini-program { margin: 2rem 0; padding: 1.25rem; border: 1px solid #d6ded4; border-radius: 8px; }
 .mini-program-date { color: #607771; font-size: .85rem; }

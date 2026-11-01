@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { contentLimits, moveSibling, type ContentNode } from '../../../src/domain/content.js';
 import type { Program } from '../../../src/domain/programs.js';
-import { ProgramRenderer } from '../programs/ProgramRenderer.js';
 
 export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, reload }: {
-  program: Program; initialNodes: ContentNode[]; onSaved(program: Program): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
+  program: Program; initialNodes: ContentNode[]; onSaved(program: Program, nodes: ContentNode[]): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
 }) {
   const [nodes, setNodes] = useState(initialNodes);
   const [kept, setKept] = useState<ContentNode[]>();
@@ -13,8 +12,9 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const savedNodes = useRef<ContentNode[] | undefined>(undefined);
   useEffect(() => { onDirtyChange(dirty); }, [dirty]);
-  useEffect(() => { if (dirty) setKept(nodes); setNodes(initialNodes); setConflict(false); setError(''); setMessage(''); setDirty(false); }, [initialNodes]);
+  useEffect(() => { if (initialNodes === savedNodes.current) { savedNodes.current = undefined; return; } if (dirty) setKept(nodes); setNodes(initialNodes); setConflict(false); setError(''); setMessage(''); setDirty(false); }, [initialNodes]);
 
   function change(next: ContentNode[]) { setNodes(next); setDirty(true); setMessage(''); }
   function add(kind: ContentNode['kind'], parentId: string | null) {
@@ -34,7 +34,7 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
             : data.error || 'Could not save. Your rundown entries are kept.');
         return;
       }
-      onSaved(data.program); onDirtyChange(false); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
+      savedNodes.current = data.nodes; onSaved(data.program, data.nodes); onDirtyChange(false); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
     } catch { setError(window.navigator.onLine ? 'Could not connect. Your rundown entries are kept. Try again.' : 'You are offline. Your rundown entries are kept. Reconnect, then try again.'); }
     finally { setBusy(false); }
   }
@@ -89,6 +89,5 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
         {dirty && <p>Unsaved rundown changes.</p>}
       </fieldset>
     </form>
-    <ProgramRenderer program={program} nodes={nodes} showHeading/>
   </section>;
 }

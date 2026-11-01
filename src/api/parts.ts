@@ -1,0 +1,37 @@
+import { Router, type RequestHandler } from 'express';
+import type { DatabaseSync } from 'node:sqlite';
+import { validateParts, type DirectPart, type FooterRole } from '../domain/parts.js';
+import { readContent } from './content.js';
+
+export function readParts(db: DatabaseSync, programId: number) {
+  const parts = db.prepare("SELECT id, target_id AS targetId, target_kind AS targetKind, kind, value, role, name, extra_info AS extraInfo, intentionally_not_listed AS intentionallyNotListed FROM parts WHERE program_id = ? ORDER BY position").all(programId) as (Omit<DirectPart, 'intentionallyNotListed'> & { intentionallyNotListed: number })[];
+  return { parts: parts.map(part => ({ ...part, intentionallyNotListed: Boolean(part.intentionallyNotListed) })), footer: db.prepare('SELECT id, title FROM footer_roles WHERE program_id = ? ORDER BY position').all(programId) as FooterRole[] };
+}
+
+export function partsRoutes(db: DatabaseSync, coordinator: RequestHandler) {
+  const router = Router();
+  router.use('/api/programs/:id/parts', coordinator);
+  const find = (id: number, owner: number) => db.prepare('SELECT id, version FROM programs WHERE id = ? AND owner_id = ?').get(id, owner) as { id: number; version: number } | undefined;
+  router.put('/api/programs/:id/parts', (req, res) => {
+    const program = find(Number(req.params.id), res.locals.user.id);
+    if (!program) return res.status(404).json({ error: 'Program not found.' });
+    const nodes = readContent(db, program.id);
+    const error = validateParts(req.body, nodes);
+    if (error) return res.status(400).json({ error });
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const result = db.prepare('UPDATE programs SET version = version + 1 WHERE id = ? AND owner_id = ? AND version = ?').run(program.id, res.locals.user.id, req.body.version);
+      if (!result.changes) { db.exec('ROLLBACK'); return res.status(409).json({ error: 'This Program changed. Your Parts are kept. Reload the saved Program, then review and reapply them.' }); }
+      db.prepare('DELETE FROM parts WHERE program_id = ?').run(program.id);
+      db.prepare('DELETE FROM footer_roles WHERE program_id = ?').run(program.id);
+      const footer = req.body.footer as FooterRole[];
+      const insertFooter = db.prepare('INSERT INTO footer_roles (program_id, id, title, position) VALUES (?, ?, ?, ?)');
+      footer.forEach((role, index) => insertFooter.run(program.id, role.id, role.title, index));
+      const insertPart = db.prepare('INSERT INTO parts (program_id, id, target_id, target_kind, kind, value, role, name, extra_info, intentionally_not_listed, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      (req.body.parts as DirectPart[]).forEach((part, index) => insertPart.run(program.id, part.id, part.targetId, part.targetKind, part.kind, part.value, part.role, part.name, part.extraInfo, part.intentionallyNotListed ? 1 : 0, index));
+      db.exec('COMMIT');
+    } catch (error) { db.exec('ROLLBACK'); throw error; }
+    res.json({ ...readParts(db, program.id), version: program.version + 1 });
+  });
+  return router;
+}

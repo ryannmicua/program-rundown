@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -42,6 +42,10 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
     expect(programs).toHaveLength(2);
     expect(programs.find((program: { title: string }) => program.title === 'Community Gathering')).toMatchObject({ status: 'Draft', date: null, startTime: '09:00', endTime: '12:00' });
     expect(programs.find((program: { title: string }) => program.title === 'Example Published Program')).toMatchObject({ status: 'Published', subtitle: 'A day of gratitude' });
+    const seededCommunity = programs.find((program: { title: string }) => program.title === 'Community Gathering');
+    const seededListing = await fetch(`${f.origin}/api/programs/${seededCommunity.id}`, { headers: { cookie } }).then(response => response.json());
+    expect(seededListing.parts).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'Alex Placeholder', role: 'Song Leader' }), expect.objectContaining({ intentionallyNotListed: true })]));
+    expect(seededListing.footer).toEqual([{ id: 'demo-pianist', title: 'Pianist' }]);
     const db = openProduct(f.config.productPath);
     try {
       const community = programs.find((program: { title: string }) => program.title === 'Community Gathering');
@@ -55,9 +59,13 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
         { label: 'Call to Worship' }, { label: '*Introit' }, { label: 'Prayer' }, { label: 'The Spoken Word' }, { label: 'Reading' }, { label: '' }, { label: 'Closing Remarks' },
       ]);
       db.prepare("UPDATE content_nodes SET detail = 'Edited detail' WHERE id = 'demo-introit'").run();
+      db.prepare("UPDATE parts SET name = 'Edited Placeholder' WHERE id = 'demo-introit-leader'").run();
+      db.prepare("UPDATE footer_roles SET title = 'Edited Pianist' WHERE id = 'demo-pianist'").run();
       const content = db.prepare('SELECT * FROM content_nodes ORDER BY position').all();
       seedProduct(env);
       expect(db.prepare('SELECT * FROM content_nodes ORDER BY position').all()).toEqual(content);
+      expect(db.prepare("SELECT name FROM parts WHERE id = 'demo-introit-leader'").get()).toEqual({ name: 'Edited Placeholder' });
+      expect(db.prepare("SELECT title FROM footer_roles WHERE id = 'demo-pianist'").get()).toEqual({ title: 'Edited Pianist' });
       expect(db.prepare('SELECT * FROM programs ORDER BY id').all()).toEqual(before);
       expect(db.prepare('SELECT * FROM sessions').all()).toEqual(sessions);
       // Retarget only demo ownership if the operator replaces the mapped synthetic identity.

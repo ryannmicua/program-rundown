@@ -57,11 +57,24 @@ export function seedProduct(env = process.env) {
       }
       db.prepare('INSERT INTO demo_content_seeds VALUES (?)').run(program.id);
     }
+    if (!db.prepare('SELECT 1 FROM demo_parts_seeds WHERE program_id = ?').get(program.id)) {
+      if (!db.prepare('SELECT 1 FROM parts WHERE program_id = ?').get(program.id) && !db.prepare('SELECT 1 FROM footer_roles WHERE program_id = ?').get(program.id)) {
+        const targets = new Set((db.prepare('SELECT id, kind FROM content_nodes WHERE program_id = ?').all(program.id) as {id: string; kind: 'item' | 'section' | 'mini-program'}[]).map(row => row.kind + ':' + row.id));
+        const insert = db.prepare('INSERT INTO parts (program_id, id, target_id, target_kind, kind, value, role, name, extra_info, intentionally_not_listed, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        let position = 0;
+        if (targets.has('item:demo-introit')) insert.run(program.id, 'demo-introit-leader', 'demo-introit', 'item', 'structured', '', 'Song Leader', 'Alex Placeholder', '', 0, position++);
+        if (targets.has('item:demo-prayer')) insert.run(program.id, 'demo-prayer-role', 'demo-prayer', 'item', 'role', '', 'Prayer Leader', '', '', 0, position++);
+        if (targets.has('item:demo-reading')) insert.run(program.id, 'demo-reading-unlisted', 'demo-reading', 'item', 'blank', '', '', '', '', 1, position++);
+        db.prepare('INSERT INTO footer_roles (program_id, id, title, position) VALUES (?, ?, ?, ?)').run(program.id, 'demo-pianist', 'Pianist', 0);
+        insert.run(program.id, 'demo-pianist-participant', 'demo-pianist', 'footer', 'text', 'Jamie Placeholder', '', '', '', 0, position);
+      }
+      db.prepare('INSERT INTO demo_parts_seeds VALUES (?)').run(program.id);
+    }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   finally { db.close(); }
 }
 if (process.argv[1]?.endsWith('/seed.ts') || process.argv[1]?.endsWith('/seed.js')) {
   seedProduct();
-  console.log('U5 demo ready: nested Sections, mini-programs, and a Program subtitle. Existing edits and feedback preserved.');
+  console.log('U6 demo ready: direct Parts, an intentionally unlisted Part, and a Footer role. Existing edits and feedback preserved.');
 }

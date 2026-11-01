@@ -29,10 +29,11 @@ test('composes nested Sections and mini-programs with a subtitle and reads the s
     await dedication.getByLabel('Detail (optional)').fill('A placeholder detail.');
     await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();
     await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
-    const preview = editor.getByRole('region', { name: 'Rundown preview' });
+    const renderer = page.getByRole('region', { name: 'Parts and Footer editor' }).locator('.program-renderer');
+    const preview = renderer.getByRole('region', { name: 'Rundown preview' });
     await expect(preview.getByRole('heading', { name: 'Community Gathering' })).toBeVisible();
-    await expect(editor.locator('.program-renderer h1')).toHaveText('Community Gathering');
-    await expect(editor.locator('.reader-subtitle')).toHaveText('A day of gratitude');
+    await expect(renderer.locator('h1')).toHaveText('Community Gathering');
+    await expect(renderer.locator('.reader-subtitle')).toHaveText('A day of gratitude');
     await expect(preview.getByRole('heading', { name: 'Morning Service' })).toBeVisible();
     await expect(preview.getByRole('heading', { name: 'Dedication' })).toBeVisible();
     await page.getByRole('button', { name: 'Publish Program' }).click();

@@ -32,6 +32,7 @@ export function contentRoutes(db: DatabaseSync, coordinator: RequestHandler) {
         return res.status(409).json({ error: 'This Draft changed. Your rundown entries are kept. Reload the saved rundown, then review and reapply your entries.' });
       }
       writeContent(db, program.id, req.body.nodes);
+      db.prepare("DELETE FROM parts WHERE program_id = ? AND target_kind != 'footer' AND target_id NOT IN (SELECT id FROM content_nodes WHERE program_id = ?)").run(program.id, program.id);
       db.exec('COMMIT');
     } catch (error) { db.exec('ROLLBACK'); throw error; }
     res.json({ program: find(program.id, res.locals.user.id), nodes: readContent(db, program.id) });
