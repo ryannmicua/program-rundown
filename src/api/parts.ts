@@ -15,6 +15,11 @@ export function readParts(db: DatabaseSync, programId: number) {
   }), footer: db.prepare('SELECT id, title FROM footer_roles WHERE program_id = ? ORDER BY position').all(programId) as FooterRole[] };
 }
 
+export function readPublicParts(db: DatabaseSync, programId: number) {
+  const { parts, footer } = readParts(db, programId);
+  return { parts: parts.map(({ intentionallyNotListed, ...part }) => part), footer };
+}
+
 export function partsRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/programs/:id/parts', coordinator);

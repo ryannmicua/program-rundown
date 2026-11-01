@@ -45,19 +45,26 @@ it('groups ordered Programs, grants Event-wide coordinator access, and keeps ano
       db.prepare('UPDATE programs SET owner_id = ? WHERE id = ?').run(foreignOwnerId, ids[2]);
       const participantId = Number(db.prepare("INSERT INTO participants (owner_id, role, name) VALUES (?, 'Session Host', 'Taylor Placeholder')").run(foreignOwnerId).lastInsertRowid);
       const target = db.prepare('SELECT id FROM content_nodes WHERE program_id = ? AND kind = ? ORDER BY position LIMIT 1').get(ids[2], 'item') as { id: string };
-      db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, participant_id, reference_mode, position) VALUES (?, 'event-owned-participant', ?, 'item', 'reference', ?, 'name', 100)").run(ids[2], target.id, participantId);
+      db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, participant_id, reference_mode, intentionally_not_listed, position) VALUES (?, 'event-owned-participant', ?, 'item', 'reference', ?, 'name', 1, 100)").run(ids[2], target.id, participantId);
     }
     finally { db.close(); }
+    const eventReader = await fetch(`${f.origin}/api/public/events/${sabbath.id}/programs/${ids[2]}`).then(r => r.json());
+    const readerPart = eventReader.parts.find((part: { id: string }) => part.id === 'event-owned-participant');
+    expect(readerPart).toBeDefined();
+    expect(readerPart).not.toHaveProperty('intentionallyNotListed');
     const conferenceListing = await fetch(`${f.origin}/api/public/events/${conferenceId}`).then(r => r.json());
     expect(conferenceListing.programs).toEqual([expect.objectContaining({ title: 'Conference Welcome', date: null, status: 'Published' })]);
     const participantsResponse = await fetch(`${f.origin}/api/participants`, { headers: { cookie } });
     const eventParticipant = (await participantsResponse.json()).participants.find((participant: { name: string }) => participant.name === 'Taylor Placeholder');
     expect(eventParticipant.programs).toEqual([expect.objectContaining({ id: ids[2], title: 'Divine Worship' })]);
     const updateParticipant = await fetch(`${f.origin}/api/participants/${eventParticipant.id}`, { method: 'PATCH', headers: { cookie, origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ role: 'Session Host', name: 'Updated Placeholder', honorific: '', position: '', organization: '', subtitle: '' }) });
-    expect(updateParticipant.status).toBe(200);
+    expect(updateParticipant.status).toBe(403);
+    expect(await updateParticipant.json()).toMatchObject({ code: 'participant-not-owner', error: expect.stringContaining('Only the coordinator who created this Participant') });
+    const deleteParticipant = await fetch(`${f.origin}/api/participants/${eventParticipant.id}`, { method: 'DELETE', headers: { cookie, origin: f.origin, 'content-type': 'application/json' }, body: '{}' });
+    expect(deleteParticipant.status).toBe(403);
     const eventProgram = await fetch(`${f.origin}/api/programs/${ids[2]}`, { headers: { cookie } }).then(r => r.json());
     expect(eventProgram.program.title).toBe('Divine Worship');
-    expect(eventProgram.parts).toEqual(expect.arrayContaining([expect.objectContaining({ participant: expect.objectContaining({ name: 'Updated Placeholder' }) })]));
+    expect(eventProgram.parts).toEqual(expect.arrayContaining([expect.objectContaining({ participant: expect.objectContaining({ name: 'Taylor Placeholder' }) })]));
     const saveEventParts = await fetch(`${f.origin}/api/programs/${ids[2]}/parts`, { method: 'PUT', headers: { cookie, origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ version: eventProgram.program.version, parts: eventProgram.parts.map(({ participant, ...part }: { participant?: unknown; [key: string]: unknown }) => part), footer: eventProgram.footer }) });
     expect(saveEventParts.status).toBe(200);
     const crossEvent = await fetch(`${f.origin}/api/events/${conferenceId}/programs`, { method: 'PUT', headers: { cookie, origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ programIds: [ids[0]] }) });
@@ -72,7 +79,7 @@ it('groups ordered Programs, grants Event-wide coordinator access, and keeps ano
     try { expect(retainedOwner.prepare('SELECT owner_id FROM programs WHERE id = ?').get(ids[2])).toEqual({ owner_id: foreignOwnerId }); }
     finally { retainedOwner.close(); }
     const afterUnlinkParticipants = await fetch(`${f.origin}/api/participants`, { headers: { cookie } }).then(r => r.json());
-    expect(afterUnlinkParticipants.participants.some((participant: { name: string }) => participant.name === 'Updated Placeholder')).toBe(false);
+    expect(afterUnlinkParticipants.participants.some((participant: { name: string }) => participant.name === 'Taylor Placeholder')).toBe(false);
 
     f.issuer.setSubject('other-coordinator-placeholder');
     const stranger = await f.signIn();

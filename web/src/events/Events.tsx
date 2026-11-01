@@ -69,6 +69,7 @@ export function Events({ embedded = false }: { embedded?: boolean }) {
       if (!response.ok) throw new Error(requestError(response.status, data.error || 'Could not save Event Programs.'));
       setMessage('Program order saved.');
       setEditing(current => current ? { ...current, programs: data.programs } : current);
+      setEvents(current => current?.map(row => row.id === editing.id ? { ...row, programs: data.programs } : row));
       setPrograms(current => current.map(program => program.eventId === editing.id || selected.includes(program.id) ? { ...program, eventId: selected.includes(program.id) ? editing.id : null } : program));
     } catch (reason) { setError(!navigator.onLine ? 'You are offline. Your changes are kept here. Reconnect, then save again.' : reason instanceof Error ? reason.message : 'Could not save. Your changes are kept here. Try again.'); }
     finally { setBusy(false); }

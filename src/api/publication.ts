@@ -1,7 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { readContent } from './content.js';
-import { readParts } from './parts.js';
+import { readPublicParts } from './parts.js';
 import { programAccessSql } from '../domain/access.js';
 
 const programColumns = `p.id, p.title, p.subtitle, p.date, p.start_time AS startTime,
@@ -23,8 +23,7 @@ export function publicationRoutes(db: DatabaseSync, coordinator: RequestHandler)
       ? db.prepare(`SELECT ${programColumns} FROM programs p JOIN program_publications pub ON pub.program_id = p.id WHERE p.id = ?`).get(id)
       : undefined;
     if (!program) return res.status(404).json({ error: 'Published Program not found.' });
-    const { parts, footer } = readParts(db, id);
-    res.json({ program, nodes: readContent(db, id), parts: parts.map(({ intentionallyNotListed, ...part }) => part), footer });
+    res.json({ program, nodes: readContent(db, id), ...readPublicParts(db, id) });
   });
   return router;
 }

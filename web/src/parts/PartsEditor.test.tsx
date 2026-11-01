@@ -124,3 +124,15 @@ it('keeps a linked reference visible while saved Participants cannot load', asyn
   expect(within(song).getByRole('option', { name: 'Speaker — Dr. Alex Placeholder' })).toBeDefined();
   expect(within(song).queryByText(/No saved Participants match/)).toBeNull();
 });
+
+it('explains that only the creator can edit a shared Participant definition', async () => {
+  const speaker = { id: 7, role: 'Speaker', name: 'Alex Placeholder', honorific: '', position: '', organization: '', subtitle: '', programs: [] };
+  const refusal = 'Only the coordinator who created this Participant can edit or delete it. You can still choose it for your Parts, or add your own definition.';
+  vi.stubGlobal('fetch', vi.fn((input: string) => input === '/api/participants'
+    ? Promise.resolve(new Response(JSON.stringify({ participants: [speaker] })))
+    : Promise.resolve(new Response(JSON.stringify({ error: refusal, code: 'participant-not-owner' }), { status: 403 }))));
+  render(editor());
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save Participant changes' }));
+  expect((await screen.findByRole('alert')).textContent).toBe(refusal);
+});

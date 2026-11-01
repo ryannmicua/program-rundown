@@ -74,7 +74,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     try {
       const response = await fetch(editingDefinition ? `/api/participants/${editingDefinition}` : '/api/participants', { method: editingDefinition ? 'PATCH' : 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(definitionDraft) });
       const data = await response.json();
-      if (!response.ok) { setDefinitionFormError(response.status === 401 ? 'Your session ended. Your Participant details are kept on this page. Sign in again, then review and save them.' : response.status === 403 ? 'This account cannot manage Participant definitions. Sign out and use the configured coordinator account.' : data.error || 'Could not save this Participant.'); return; }
+      if (!response.ok) { setDefinitionFormError(response.status === 401 ? 'Your session ended. Your Participant details are kept on this page. Sign in again, then review and save them.' : response.status === 403 && data.code !== 'participant-not-owner' ? 'This account cannot manage Participant definitions. Sign out and use the configured coordinator account.' : data.error || 'Could not save this Participant.'); return; }
       const saved = data.participant as ParticipantDefinition;
       setDefinitions(current => editingDefinition ? current.map(item => item.id === saved.id ? saved : item) : [...current, saved].sort((a, b) => a.role.localeCompare(b.role) || a.name.localeCompare(b.name)));
       if (editingDefinition) setParts(current => current.map(part => part.participantId === saved.id ? { ...part, participant: saved } : part));

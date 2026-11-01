@@ -500,7 +500,7 @@ Use U12's creation flow only after import.
 
 ## Settled product decisions
 
-The captain settled Q1–Q3, Q5, T1–T2, and P1; Q4 delegates the list design to this plan.
+The captain settled Q1–Q3, Q5, T1–T2, P1, and P2; Q4 delegates the list design to this plan.
 
 | ID | Decision | Affected work |
 | --- | --- | --- |
@@ -513,6 +513,7 @@ The captain settled Q1–Q3, Q5, T1–T2, and P1; Q4 delegates the list design t
 | T1 | Any coordinator can save a managed Program as a template owned by their account and usable across all their Events. Sharing makes the template visible to other coordinators, who must copy/import it as an independent template in their own account, never link to it. Sharing grants no rights to the source Program. | U12, U13 |
 | T2 | A new Program copies Parts in order with their extra info, but no Participant assignments. Header dates/times do not carry over; the new Program takes its own title and optional date. | U12 creation preview and carry-over; U13 imports |
 | P1 | A coordinator can tick `Intentionally not listed` for a Part's participant. Persist the tick and exclude that Part from unassigned review. Blank without the tick still counts as unassigned. | U6 editor and persistence, U10 review |
+| P2 | Only the coordinator who created a Participant definition can edit or delete it. Other coordinators who manage a Program using it, including through an Event, can still select and reuse it or swap in their own definition; their edit or delete requests are refused with a permission-denied message (captain, 2026-11-01). | U7, U8 |
 | Subtitle | Use an optional subtitle on the Program definition's Header, beneath the title and date line in coordinator preview, reader, and print. No separate theme field is needed. | U5 |
 
 Each program entry uses three existing concepts: required title = Item label, optional participant = Part, optional detail line = Item Detail.
