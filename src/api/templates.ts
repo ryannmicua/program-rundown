@@ -38,12 +38,8 @@ export function templateRoutes(db: DatabaseSync, coordinator: RequestHandler) {
     if (!Number.isSafeInteger(id) || id < 1) return res.status(404).json({ error: 'Shared template not found.' });
     const source = db.prepare('SELECT name, snapshot FROM program_templates WHERE id = ? AND shared = 1 AND owner_id != ?').get(id, recipient) as { name: string; snapshot: string } | undefined;
     if (!source) return res.status(404).json({ error: 'Shared template not found. It may be private or no longer shared.' });
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      const result = db.prepare('INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, ?, ?)').run(recipient, source.name, source.snapshot);
-      db.exec('COMMIT');
-      return res.status(201).json({ template: { id: Number(result.lastInsertRowid), name: source.name } });
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
+    const result = db.prepare('INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, ?, ?)').run(recipient, source.name, source.snapshot);
+    return res.status(201).json({ template: { id: Number(result.lastInsertRowid), name: source.name } });
   });
   router.post('/api/templates', (req, res) => {
     if (!req.body || Object.keys(req.body).some(key => !['name', 'programId'].includes(key)) || typeof req.body.name !== 'string' || !req.body.name.trim() || req.body.name.trim().length > 200 || !Number.isSafeInteger(req.body.programId) || req.body.programId < 1) return res.status(400).json({ error: 'Enter a template name and choose a Program.' });

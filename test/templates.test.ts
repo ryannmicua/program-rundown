@@ -1,7 +1,12 @@
+import express, { type RequestHandler } from 'express';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import { templateRoutes } from '../src/api/templates.js';
 import { openProduct } from '../src/db/product.js';
 import { seedProduct } from '../src/demo/seed.js';
-import { fixture } from './support.js';
+import { fixture, listen } from './support.js';
 
 const json = (origin: string, cookie: string, path: string, method = 'GET', body?: unknown) => fetch(`${origin}${path}`, { method, headers: { cookie, ...(body === undefined ? {} : { origin, 'content-type': 'application/json' }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
@@ -100,4 +105,56 @@ it('does not recreate a deliberately removed demo template on seed reruns', asyn
     try { expect(db.prepare("SELECT COUNT(*) AS count FROM program_templates WHERE owner_id = (SELECT id FROM identities WHERE subject = ?)").get(f.config.testerSubject)).toEqual({ count: 0 }); }
     finally { db.close(); }
   } finally { await f.close(); }
+});
+
+it('shares owned templates with other coordinators and imports them as independent private copies', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rundown-sharing-'));
+  const db = openProduct(join(dir, 'product.sqlite'));
+  const identity = (subject: string) => Number(db.prepare("INSERT INTO identities (issuer, subject, label) VALUES ('https://issuer.example.invalid', ?, 'Placeholder coordinator')").run(subject).lastInsertRowid);
+  const ownerId = identity('owner-placeholder'), recipientId = identity('recipient-placeholder');
+  const snapshot = { nodes: [{ id: 'service', parentId: null, kind: 'section', label: 'Service', detail: '', startTime: null, endTime: null, date: null, blockLabel: '' }, { id: 'opening', parentId: 'service', kind: 'item', label: 'Opening', detail: 'Placeholder detail', startTime: null, endTime: null, date: null, blockLabel: '' }], parts: [{ id: 'leader', targetId: 'opening', targetKind: 'item', kind: 'role', value: '', role: 'Speaker', name: '', extraInfo: 'Music note', intentionallyNotListed: false }], footer: [{ id: 'pianist', title: 'Pianist' }] };
+  const templateId = Number(db.prepare('INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, ?, ?)').run(ownerId, 'Owner Placeholder Template', JSON.stringify(snapshot)).lastInsertRowid);
+  const coordinator: RequestHandler = (req, res, next) => { res.locals.user = { id: Number(req.get('x-test-identity')), coordinator: true }; next(); };
+  const app = express();
+  app.use(express.json());
+  app.use(templateRoutes(db, coordinator));
+  const server = await listen(app);
+  const as = (user: number, path: string, method = 'GET', body?: unknown) => fetch(`${server.origin}${path}`, { method, headers: { 'x-test-identity': String(user), ...(body === undefined ? {} : { 'content-type': 'application/json' }) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  try {
+    expect((await (await as(recipientId, '/api/templates')).json()).sharedTemplates).toEqual([]);
+    expect((await as(recipientId, `/api/templates/shared/${templateId}`)).status).toBe(404);
+    expect((await as(recipientId, `/api/templates/shared/${templateId}/import`, 'POST', {})).status).toBe(404);
+    expect((await as(recipientId, `/api/templates/${templateId}/sharing`, 'PATCH', { shared: true })).status).toBe(404);
+    expect((await as(ownerId, `/api/templates/${templateId}/sharing`, 'PATCH', { shared: 'yes' })).status).toBe(400);
+
+    const shared = await as(ownerId, `/api/templates/${templateId}/sharing`, 'PATCH', { shared: true });
+    expect(shared.status).toBe(200);
+    expect(await shared.json()).toEqual({ shared: true });
+    expect((await (await as(ownerId, '/api/templates')).json()).sharedTemplates).toEqual([]);
+    expect((await as(ownerId, `/api/templates/shared/${templateId}`)).status).toBe(404);
+    expect((await (await as(recipientId, '/api/templates')).json()).sharedTemplates).toEqual([{ id: templateId, name: 'Owner Placeholder Template' }]);
+    const preview = await as(recipientId, `/api/templates/shared/${templateId}`);
+    expect(preview.status).toBe(200);
+    expect(await preview.json()).toEqual({ template: { id: templateId, name: 'Owner Placeholder Template' }, ...snapshot });
+    expect((await as(recipientId, `/api/templates/${templateId}`)).status).toBe(404);
+    expect((await as(recipientId, `/api/templates/${templateId}/programs`, 'POST', { title: 'Forbidden Copy' })).status).toBe(404);
+
+    const imported = await as(recipientId, `/api/templates/shared/${templateId}/import`, 'POST', {});
+    expect(imported.status).toBe(201);
+    const copy = (await imported.json()).template;
+    expect(copy).toEqual({ id: expect.any(Number), name: 'Owner Placeholder Template' });
+    expect(copy.id).not.toBe(templateId);
+    expect((await (await as(recipientId, '/api/templates')).json()).templates).toEqual([{ id: copy.id, name: 'Owner Placeholder Template', shared: 0 }]);
+    expect(await (await as(recipientId, `/api/templates/${copy.id}`)).json()).toEqual({ template: copy, ...snapshot });
+    expect((await as(ownerId, `/api/templates/${copy.id}`)).status).toBe(404);
+    expect((await (await as(ownerId, '/api/templates')).json()).sharedTemplates).toEqual([]);
+    expect((await as(recipientId, `/api/templates/${copy.id}/programs`, 'POST', { title: 'Imported Placeholder Draft' })).status).toBe(201);
+
+    expect((await as(ownerId, `/api/templates/${templateId}/sharing`, 'PATCH', { shared: false })).status).toBe(200);
+    expect((await (await as(recipientId, '/api/templates')).json()).sharedTemplates).toEqual([]);
+    expect((await as(recipientId, `/api/templates/shared/${templateId}`)).status).toBe(404);
+    expect((await as(recipientId, `/api/templates/shared/${templateId}/import`, 'POST', {})).status).toBe(404);
+    expect(await (await as(recipientId, `/api/templates/${copy.id}`)).json()).toEqual({ template: copy, ...snapshot });
+    expect(db.prepare('SELECT owner_id, shared FROM program_templates WHERE id = ?').get(copy.id)).toEqual({ owner_id: recipientId, shared: 0 });
+  } finally { await server.close(); db.close(); rmSync(dir, { recursive: true, force: true }); }
 });
