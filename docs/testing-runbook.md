@@ -142,7 +142,7 @@ It also checks Header/content revision conflicts and anonymous and unauthorized 
 
 - Header and content share the Program revision. A stale save returns 409 without changing either Header or tree.
 - The editor stores order locally until **Save rundown**. Pointer and keyboard users share the same move buttons.
-- The flat U3 tree permits only root Sections and Items under Sections; nesting and mini-programs arrive in U5.
+- U3 introduced root Sections with Items; U5 adds nested Sections and mini-programs (see `test/nesting.test.ts` and `e2e/nesting.spec.ts`).
 - Content IDs remain stable across edits and sibling moves. Array order defines sibling order, even when children are interleaved in the API array.
 - A seed marker prevents deleted demo content from returning. Seeding never opens feedback storage.
 - Rebuild before browser tests, because the fixture serves `web/dist`.
