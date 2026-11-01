@@ -20,10 +20,11 @@ The application must preserve these requirements from the concepts:
 | R4 | Coordinators manage flexible and parallel Parts, Part extra info, Participant definitions shared between Programs, Roles, and Footer standing roles. | U6, U7, U9 |
 | R5 | An optional Event links and orders complete Programs, optionally grouped by each Program's own date. | U8 |
 | R6 | Parts move within their Program or between Programs linked to the same Event, never across Events. Occupied destinations retain all Parts in parallel. Copies offer `Copy without Participant` and `Copy everything`. | U9 |
-| R7 | Blank, omitted, and role-only Parts without named holders count as unassigned. Extra info alone does not assign anyone. | U10 |
+| R7 | Blank, omitted, and role-only Parts without named holders count as unassigned unless the coordinator ticks `Intentionally not listed` for that Part's participant. Extra info alone does not assign anyone. | U6, U10 |
 | R8 | The Participant list covers the whole Event, filterable by Program; standalone Programs offer their own list. Group shared references by definition, preserve direct text per Part, and show unnamed roles separately. | U11 |
 | R9 | Dev has one synthetic test user, accessible demo data, portal registration, and feedback absent from production. | U1 onward |
 | R10 | Coordinators save Programs as account-owned templates usable across their Events. Shared templates must be imported as independent owned copies. New Drafts copy ordered Parts and extra info, without Participant assignments or Header dates/times. | U12, U13 |
+| R11 | A Program definition has an optional Header subtitle, shown beneath the title and date line in coordinator preview, reader, and print. | U5 |
 
 R6–R8 are settled decisions, replacing the three earlier open questions.
 The follow-up Q1–Q5 are also settled; the decision record below names each answer.
@@ -76,10 +77,10 @@ Add schema only as each slice needs it, rather than implementing the entire mode
 | Area | Proposed records and invariants |
 | --- | --- |
 | Identity | External issuer/subject mapping, session records, and coordinator grants. Authentication identities are separate from Participants. |
-| Program | Stable ID, Header fields, `draft`/`published` status, optional Event link, and a revision counter for conflict detection. |
+| Program | Stable ID, Header fields including an optional Program subtitle, `draft`/`published` status, optional Event link, and a revision counter for conflict detection. The Program subtitle is separate from a Participant subtitle. |
 | Content | Ordered nodes with Program ID, parent ID, and kind: Section, mini-program, or Item. Check allowed parents and prevent cycles. |
 | Ordering | Transactional sibling ordering; moving content preserves descendant ownership. Root content contains Sections or mini-programs; Items belong to Sections. |
-| Parts | Zero or more independently addressable assignments at an eligible node or Footer entry, each with independent extra info. Moving or copying to an occupied spot appends a parallel Part. |
+| Parts | Zero or more independently addressable assignments at an eligible node or Footer entry, each with independent extra info and a persisted `Intentionally not listed` flag for its participant. The flag excludes that Part from unassigned review; blank without the tick remains unassigned. Moving or copying to an occupied spot appends a parallel Part. |
 | Part values | Explicit blank, free text, role, structured role/name, and Participant reference forms. Store stable reference IDs and the selected name/role display mode. |
 | Participants | Definitions shared between Programs, with role, optional name, honorific, position, organization, and subtitle. Use stable identities and explicit reuse; matching text never merges people. Check access before selection, reuse, or edits. |
 | Footer | Ordered standing-role entries with the same Part rules, including group text for multiple holders. Footer entries are outside the activity sequence. |
@@ -292,12 +293,13 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 
 **Goal and outcome:** The coordinator represents a Program within a Program without confusing it with a separate Event-linked Program.
 
-**In:** Nested Sections/mini-programs, mini-program Headers and dates, optional independent times, block labels, subtree ordering, preview and print integration.
+**In:** Nested Sections/mini-programs, mini-program Headers and dates, an optional Program Header subtitle, optional independent times, block labels, subtree ordering, preview and print integration.
 **Out:** Separate Program moves, Event links, and a custom stylesheet/settings editor.
 
 **Acceptance and tests:**
 
 - Compose `Community Gathering → Morning Service → Dedication`; persist and render the same hierarchy in preview, reader, and print.
+- Save, edit, clear, and reopen the Program's optional subtitle; show it beneath the title and date line in coordinator preview, reader, and print. Omit the subtitle line when blank.
 - Put a mini-program inside a Section and a Section inside a mini-program; reject cycles and cross-Program parent references.
 - Preserve an unknown block label and an unheaded labelled Section; `featured` imposes no special content shape.
 - Group times remain optional and independent of child times. Labels never become raw HTML or executable style content.
@@ -310,6 +312,7 @@ Follow Steward's feedback UI/API pattern, while adding the separate file and env
 **Goal and outcome:** The coordinator assigns, changes, and clears who leads Items, Sections, mini-programs, and Footer roles.
 
 **In:** Blank, text, role, and structured role/name Parts; ordered Footer entries; editor, reader, and print rendering.
+The participant editor offers an `Intentionally not listed` tick for each Part and persists it independently of the Part value and extra info.
 For each program entry, show a required title (existing Item label), optional participant (existing Part), and optional detail line (existing Item Detail).
 For example: `Opening Song`, a song leader, and `Amazing Grace, Hymn #321`. This mapping adds no new fields.
 Retain Part extra info only for per-person notes on parallel Parts; the editor must not offer it as a second entry detail line.
@@ -319,6 +322,7 @@ Represent each spot as capable of holding independently editable parallel Parts;
 **Acceptance and tests:**
 
 - Add, update, and clear every supported direct Part form on each eligible target; activity labels and Detail remain unchanged.
+- Tick and untick `Intentionally not listed` for a Part's participant; save and reload to confirm persistence, independently for parallel Parts. A blank value without the tick remains unassigned; U10 excludes ticked Parts from review.
 - Save and reopen `Opening Song` with and without its optional participant and detail line; its required title uses the existing Item label validation.
   Render `Amazing Grace, Hymn #321` once as Item Detail, not again as Part extra info.
   Parallel Parts retain independent per-person notes without duplicating the entry detail line.
@@ -407,14 +411,15 @@ Copies offer `Copy without Participant` and `Copy everything`.
 
 **Acceptance and tests:**
 
-- Include blank and omitted values, including extra-info-only Parts, plus standalone roles and structured roles without names.
-- Include role references whose Participant lacks a name; assigning a name removes them from the unassigned result.
+- Unless `Intentionally not listed` is ticked, include blank and omitted values, including extra-info-only Parts, plus standalone roles and structured roles without names.
+- Exclude every Part whose participant is ticked `Intentionally not listed`, including blank and role-only Parts. Unticking restores an otherwise unassigned Part to review after save and reload.
+- Unless `Intentionally not listed` is ticked, include role references whose Participant lacks a name; assigning a name removes them from the unassigned result.
 - Keep free text such as `Congregation` valid. Do not infer the meaning of `TBA` or split group text into unnamed people.
 - Preserve an unassigned Part's full content when opening and saving it; exclude inaccessible Drafts from any cross-Program query.
-- Classify parallel Parts independently; a named Part at the same spot does not hide an unnamed role or extra-info-only Part.
+- Classify parallel Parts independently; a named or intentionally unlisted Part at the same spot does not hide another unassigned Part.
 
 **Files and proof:** `src/domain/unassigned.ts`, `web/src/assignments/`, `test/unassigned.test.ts`, `e2e/unassigned.spec.ts`.
-**Dependencies:** U7 and U8; extend move-related browser coverage when U9 lands. R7 settles role-only classification.
+**Dependencies:** U7 and U8, including U6's persisted tick; extend move-related browser coverage when U9 lands. R7 and P1 settle unassigned classification.
 
 ### 11. U11 — List Participants across an Event, filterable by Program
 
@@ -495,7 +500,7 @@ Use U12's creation flow only after import.
 
 ## Settled product decisions
 
-The captain settled Q1–Q3, Q5, and T1–T2; Q4 delegates the list design to this plan.
+The captain settled Q1–Q3, Q5, T1–T2, and P1; Q4 delegates the list design to this plan.
 
 | ID | Decision | Affected work |
 | --- | --- | --- |
@@ -506,6 +511,8 @@ The captain settled Q1–Q3, Q5, and T1–T2; Q4 delegates the list design to th
 | Q5 | Share Participant definitions between Programs. Moving or fully copying a reference keeps its identity; offer copying without Participant or copying everything. | U7, U9, U11 |
 | T1 | Any coordinator can save a managed Program as a template owned by their account and usable across all their Events. Sharing makes the template visible to other coordinators, who must copy/import it as an independent template in their own account, never link to it. Sharing grants no rights to the source Program. | U12, U13 |
 | T2 | A new Program copies Parts in order with their extra info, but no Participant assignments. Header dates/times do not carry over; the new Program takes its own title and optional date. | U12 creation preview and carry-over; U13 imports |
+| P1 | A coordinator can tick `Intentionally not listed` for a Part's participant. Persist the tick and exclude that Part from unassigned review. Blank without the tick still counts as unassigned. | U6 editor and persistence, U10 review |
+| Subtitle | Use an optional subtitle on the Program definition's Header, beneath the title and date line in coordinator preview, reader, and print. No separate theme field is needed. | U5 |
 
 Each program entry uses three existing concepts: required title = Item label, optional participant = Part, optional detail line = Item Detail.
 For example, `Opening Song` can list a song leader and the detail `Amazing Grace, Hymn #321`.
@@ -516,13 +523,15 @@ Text assignments preserve names and groups without requiring individual records 
 `Awaiting a name` keeps role placeholders visible without treating them as named people.
 Every group links back to source Parts, so the coordinator can act on the list.
 
+### Decided not to build
+
+- **Duration-note field:** Coordinators type a duration note into the part title (existing Item label); no separate field is needed.
+- **Gold music highlight:** Do not add a gold music highlight box.
+- **Side page label:** Do not derive a side page label from Event date grouping for now.
+
 ## Open product questions
 
-Q1–Q5 and T1–T2 are settled above. One participant-review question remains open.
-
-| ID | Question | Affected work |
-| --- | --- | --- |
-| P1 | How should an intentionally unlisted participant interact with the unassigned-Parts review? No marker or change to the current blank/unassigned rules is decided. | U10 |
+None. Q1–Q5, T1–T2, and P1 are settled above, along with the Program subtitle and the reference-program gaps.
 
 Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.

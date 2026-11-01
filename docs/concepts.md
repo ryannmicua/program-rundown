@@ -79,6 +79,8 @@ Coordinators need to:
 3. **See which Parts have no assignment yet.**
    A blank Part has no assignment, even if it has Part extra info.
    Role-only Parts without a named holder also count as unassigned.
+   A coordinator can tick `Intentionally not listed` for a Part's participant to exclude that Part from review.
+   Blank without the tick still counts as unassigned.
 4. **Get a list of Participants.**
    Use [Participant](#participant) for the people taking Parts, including people represented by group text.
    The list covers the whole Event and can be filtered to one Program.
@@ -335,7 +337,9 @@ It holds:
 - **Date** (optional): the day described by the Program or mini-program.
   Example: `7 November 2026` (illustrative; absent from the sample).
   The event date differs from the date a coordinator publishes the document.
-- Other optional header lines, such as a venue or a theme, may appear on other programs; the sample has none.
+- **Program subtitle** (optional): text on the Program definition, shown beneath the title and date line in coordinator preview, reader, and print.
+  Use this for a theme when needed; no separate theme field is required.
+  This is separate from a Participant subtitle; the sample has neither a Program subtitle nor a theme.
 
 Neither time depends on the other: a Header may show only a start, only an end, both, or neither.
 
@@ -450,6 +454,9 @@ Omitting the optional Part value also leaves no assignment; this does not requir
 Part extra info alone does not assign anyone.
 Role-only values remain valid and count as unassigned when they have no named holder.
 This includes a standalone role, a structured role without a name, or a role reference to a Participant without a name.
+A coordinator can tick `Intentionally not listed` for a Part's participant in the editor.
+The tick persists independently of the Part value and extra info, and excludes that Part from unassigned review.
+Each parallel Part has its own tick. Blank without the tick still counts as unassigned.
 
 Moving a Part relocates its value and extra info and clears only that source Part.
 An occupied destination keeps every existing Part, including extra-info-only Parts, and receives the moved Part alongside them.
@@ -517,7 +524,7 @@ Only assignments in Programs the coordinator may access contribute to the list.
 Each entry links to its source Parts, including parallel Parts.
 List entries follow their first assignment in Event Program order, then content order, with Footer entries last.
 The Program filter keeps only matching assignments and their locations.
-Unused definitions and blank or extra-info-only Parts do not appear; the unassigned-Part review still covers those Parts.
+Unused definitions and blank or extra-info-only Parts do not appear; the unassigned-Part review covers those Parts unless `Intentionally not listed` is ticked.
 Treat `TBA` as text, without guessing whether it names a person.
 
 This design groups only identities the coordinator explicitly chose to share.
@@ -642,7 +649,7 @@ There is no version history or new published version per edit.
 | Reader | Anyone who follows a published Program by link, without signing in | An attendee holding the sheet |
 | Status | Whether a Program is a draft or published | Draft |
 | Draft | A working Program that Coordinators may read before publication | Wednesday's unfinished Saturday listing |
-| Header | The identifying block of a Program or mini-program: title, optional start, optional end, optional date | `DIVINE SERVICE`, `10:30 a.m.` |
+| Header | The identifying block of a Program or mini-program: title, optional start, optional end, optional date; the Program definition also supports an optional Program subtitle | `DIVINE SERVICE`, `10:30 a.m.` |
 | Mini-program | A program within a single Program, with its own Header, optional times, and ordered children; nesting is supported | `Morning Service` within `Community Gathering` |
 | Section | An ordered group of Items, optionally headed; may contain nested Sections or mini-programs | `CALL TO WORSHIP`; an unheaded closing Section |
 | Heading | A Section's optional visible title | `WORSHIP THROUGH GIVING` |
@@ -653,7 +660,7 @@ There is no version history or new published version per edit.
 | Detail | Optional free text for an Item | `"Holy, Holy, Holy"`, `Psalm 100:1–5` |
 | Part | The optional assignment of who does an Item or leads a block; accepts blank, text, role, role with optional name, or a Participant reference | Role reference `Speaker` displays the Participant's name when available, otherwise `Speaker` |
 | Parallel Parts | Separate Parts at the same Item, block, or Footer spot, each retaining its value and extra info | Moving a second assignment onto `Prayer` keeps both |
-| Unassigned Part | A blank or omitted Part value, even with Part extra info, or a role-only value without a named holder | An empty Part on `Prayer`; role `Speaker` without a named holder |
+| Unassigned Part | A blank or omitted Part value, even with Part extra info, or a role-only value without a named holder, unless `Intentionally not listed` is ticked | An unticked empty Part on `Prayer`; unticked role `Speaker` without a named holder |
 | Part extra info | Optional per-person notes on parallel Parts, separate from Item Detail | Song leaders with notes `First verse` and `Second verse` |
 | Participant | A person defined once for reuse across Programs by Parts by name or role; may carry a role, optional name, position, and organization | Role `Speaker`, name `Alex Placeholder`, position `Education Director`, organization `Example Conference` |
 | Participant list | A coordinator's list of named Participants, text assignments, and roles awaiting a name, with source locations; Event-wide with a Program filter, or standalone | A shared `Jamie Example` definition with reading and prayer locations |
@@ -667,6 +674,7 @@ There is no version history or new published version per edit.
 | Date | Optional day described by a Program or mini-program Header | `7 November 2026` |
 | Honorific | A courtesy title before a participant's name | `Dr.` |
 | Subtitle | Participant information shown under the name, which may combine position and organization | `Education Director, Example Conference` |
+| Program subtitle | Optional text on the Program Header, shown beneath the title and date line in coordinator preview, reader, and print | `A Day of Thanksgiving` |
 | Footer | The closing list of standing roles and their Parts | `Presider \| Sam Sample` |
 
 ## 7. Decisions
@@ -736,6 +744,8 @@ The earlier decisions remain in place, with the additional decisions below.
     Role-only Parts without a named holder also count as unassigned.
     These include standalone roles, structured roles without names, and role references to Participants without names.
     Such role-only Parts remain valid values.
+    A coordinator can tick `Intentionally not listed` for a Part's participant; persist the tick and exclude that Part from review (P1).
+    Blank without the tick still counts as unassigned.
 18. **Participant list scope.**
     The list covers the whole Event and can be filtered to one Program.
     The Event-wide list uses its linked Programs, optionally grouped by their dates; it does not introduce occurrences.
@@ -759,11 +769,19 @@ The earlier decisions remain in place, with the additional decisions below.
     Example: `Opening Song`, the song leader, and `Amazing Grace, Hymn #321`.
     This maps onto existing concepts without adding fields.
 
+22. **Program subtitle.**
+    The Program definition supports an optional Header subtitle beneath the title and date line in coordinator preview, reader, and print.
+    Use the subtitle for a theme when needed; no separate theme field is required.
+
+### Decided not to build
+
+- **Duration-note field:** Coordinators type a duration note into the part title (existing Item label); no separate field is needed.
+- **Gold music highlight:** Do not add a gold music highlight box.
+- **Side page label:** Do not derive a side page label from Event date grouping for now.
+
 ### Open product questions
 
-| ID | Question | Affected work |
-|---|---|---|
-| P1 | How should an intentionally unlisted participant interact with the unassigned-Parts review? No marker or change to the current blank/unassigned rules is decided. | U10 |
+None. P1 is settled above.
 
 ### Deferred capabilities
 
