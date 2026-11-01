@@ -160,6 +160,27 @@ export function seedProduct(env = process.env) {
       if (added) db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(seededProgram.id);
       db.prepare('INSERT INTO demo_move_part_seeds VALUES (?)').run(seededProgram.id);
     }
+    // Seed one traceable placeholder assignment per Sabbath Program. The per-Program marker
+    // prevents later runs from restoring a coordinator's deliberate removal.
+    const listSpeaker = db.prepare("SELECT id FROM participants WHERE seed_key = 'demo-speaker' AND owner_id = ?").get(identity.id) as { id: number } | undefined;
+    for (const [key, kind, targetSuffix] of [
+      ['demo-sabbath-vesper', 'text', 'opening'], ['demo-sabbath-school', 'reference', 'opening'],
+      ['demo-divine-worship', 'reference', 'closing'], ['demo-ay', 'text', 'opening'],
+      ['demo-next-vesper', 'text', 'main'], ['demo-next-worship', 'reference', 'opening'],
+    ] as const) {
+      const seededProgram = db.prepare('SELECT id FROM programs WHERE seed_key = ?').get(key) as { id: number } | undefined;
+      if (!seededProgram || db.prepare('SELECT 1 FROM demo_participant_list_seeds WHERE program_id = ?').get(seededProgram.id)) continue;
+      const targetId = `event-${key}-${targetSuffix}`;
+      const exists = db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ? AND id = ?').get(seededProgram.id, targetId);
+      if (!exists) continue;
+      if (!db.prepare('SELECT 1 FROM parts WHERE program_id = ? AND target_id = ?').get(seededProgram.id, targetId)) {
+        const position = db.prepare('SELECT COALESCE(MAX(position) + 1,0) AS value FROM parts WHERE program_id = ?').get(seededProgram.id) as { value: number };
+        if (kind === 'reference' && listSpeaker) db.prepare("INSERT INTO parts (program_id,id,target_id,target_kind,kind,position,participant_id,reference_mode) VALUES (?,?,?,'item','reference',?,?,'name')").run(seededProgram.id, `demo-list-${key}`, targetId, position.value, listSpeaker.id);
+        else db.prepare("INSERT INTO parts (program_id,id,target_id,target_kind,kind,value,position) VALUES (?,?,?,'item','text','Alex Placeholder',?)").run(seededProgram.id, `demo-list-${key}`, targetId, position.value);
+        db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(seededProgram.id);
+      }
+      db.prepare('INSERT INTO demo_participant_list_seeds VALUES (?)').run(seededProgram.id);
+    }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   finally { db.close(); }

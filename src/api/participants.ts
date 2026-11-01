@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { participantAccessSql, programAccessSql } from '../domain/access.js';
+import { buildParticipantList, type ParticipantAssignment } from '../domain/participant-list.js';
 
 type Definition = { role: string; name: string; honorific: string; position: string; organization: string; subtitle: string };
 const fields: (keyof Definition)[] = ['role', 'name', 'honorific', 'position', 'organization', 'subtitle'];
@@ -27,6 +28,43 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
   router.use('/api/participants', coordinator);
   router.get('/api/participants', (_req, res) => {
     res.json({ participants: read(db, res.locals.user.id).map(serialize) });
+  });
+  function list(programRows: { id: number; title: string; eventPosition: number | null }[], filterId?: number) {
+    if (filterId !== undefined) programRows = programRows.filter(program => program.id === filterId);
+    if (!programRows.length) return buildParticipantList([]);
+    const ids = programRows.map(program => program.id);
+    const sqlIds = ids.map(() => '?').join(',');
+    const rows = db.prepare(`WITH RECURSIVE tree(program_id,id,parent_id,kind,label,sort_path) AS (
+      SELECT program_id,id,parent_id,kind,label,printf('%08d',position) FROM content_nodes WHERE parent_id IS NULL AND program_id IN (${sqlIds})
+      UNION ALL SELECT n.program_id,n.id,n.parent_id,n.kind,n.label,tree.sort_path || '.' || printf('%08d',n.position) FROM content_nodes n JOIN tree ON n.program_id=tree.program_id AND n.parent_id=tree.id
+    )
+    SELECT p.program_id AS programId, pr.title AS programTitle, p.id AS partId, p.target_kind AS targetKind, p.target_id AS targetId,
+      CASE WHEN p.target_kind='footer' THEN COALESCE(NULLIF(f.title,''),'Untitled role') ELSE COALESCE(NULLIF(t.label,''), CASE t.kind WHEN 'section' THEN 'Unheaded Section' WHEN 'item' THEN 'Untitled Item' ELSE 'Untitled mini-program' END) END AS targetLabel,
+      CASE WHEN p.target_kind='footer' THEN COALESCE(NULLIF(f.title,''),'Untitled role') END AS footerTitle, p.kind, p.value, p.role, p.name,
+      p.participant_id AS participantId, p.reference_mode AS referenceMode, d.role AS participantRole, d.name AS participantName,
+      d.honorific, d.position, d.organization, d.subtitle, pr.event_position AS eventPosition,
+      CASE WHEN p.target_kind='footer' THEN printf('~%08d',f.position) ELSE t.sort_path END AS targetOrder, p.position AS partPosition
+    FROM parts p JOIN programs pr ON pr.id=p.program_id LEFT JOIN tree t ON t.program_id=p.program_id AND t.id=p.target_id AND p.target_kind!='footer'
+    LEFT JOIN footer_roles f ON f.program_id=p.program_id AND f.id=p.target_id AND p.target_kind='footer' LEFT JOIN participants d ON d.id=p.participant_id
+    WHERE p.program_id IN (${sqlIds})
+    ORDER BY COALESCE(pr.event_position,0), targetOrder, partPosition`).all(...ids, ...ids) as unknown as ParticipantAssignment[];
+    return buildParticipantList(rows);
+  }
+  router.get('/api/events/:id/participants', coordinator, (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isSafeInteger(eventId) || eventId < 1) return res.status(404).json({ error: 'Event not found.' });
+    const event = db.prepare('SELECT id FROM events WHERE id = ? AND owner_id = ?').get(eventId, res.locals.user.id);
+    if (!event) return res.status(404).json({ error: 'Event not found.' });
+    const programs = db.prepare('SELECT id, title, event_position AS eventPosition FROM programs WHERE event_id = ? ORDER BY event_position, id').all(eventId) as { id: number; title: string; eventPosition: number }[];
+    const requested = req.query.programId === undefined ? undefined : Number(req.query.programId);
+    if (requested !== undefined && (!Number.isSafeInteger(requested) || !programs.some(p => p.id === requested))) return res.status(404).json({ error: 'Program not found in this Event.' });
+    res.json({ ...list(programs, requested), programs: programs.map(({ id, title }) => ({ id, title })) });
+  });
+  router.get('/api/programs/:id/participants', coordinator, (req, res) => {
+    const id = Number(req.params.id);
+    const program = Number.isSafeInteger(id) && id > 0 ? db.prepare(`SELECT id,title,event_position AS eventPosition FROM programs WHERE id=? AND ${programAccessSql()}`).get(id, res.locals.user.id, res.locals.user.id) as { id: number; title: string; eventPosition: number | null } | undefined : undefined;
+    if (!program) return res.status(404).json({ error: 'Program not found.' });
+    res.json({ ...list([program]), programs: [{ id: program.id, title: program.title }] });
   });
   router.post('/api/participants', (req, res) => {
     const result = validate(req.body);

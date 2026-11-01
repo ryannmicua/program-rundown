@@ -160,6 +160,18 @@ Item labels, Detail, and order never move. Standalone Programs and Programs in o
 `POST /api/programs/:id/parts/:partId/transfer` takes `destinationProgramId`, `destinationTargetId`, `destinationTargetKind`, `operation` (`move` or `copy`), `copyMode` for copies (`without-participant` or `everything`), and both Programs' `sourceVersion` and `destinationVersion`.
 It changes both Programs atomically, returns 403 across Events or standalone Programs, 409 when either Program changed, and 400 when the destination already has 600 Parts.
 
+## List Participants
+
+Open an Event and choose **View Event Participants**, or open a standalone Program and choose **View Participants**.
+The list groups assignments under **Named Participants**, **Text assignments**, and **Awaiting a name**, each with links to its source Parts.
+On an Event, **Filter by Program** narrows the list to one linked Program.
+See the [Participant list design](concepts.md#participant-list) for grouping and ordering rules.
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/events/:id/participants` | List assignments across an owned Event's Programs; optional `programId` limits it to one linked Program. Other Events and unlinked Programs return 404. |
+| `GET /api/programs/:id/participants` | List assignments for one Program you can manage; inaccessible Programs return 404. |
+
 ## Run the container
 
 Build with `docker build -t program-rundown:local .`.

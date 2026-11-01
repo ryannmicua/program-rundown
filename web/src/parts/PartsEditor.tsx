@@ -52,6 +52,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   const [definitionMessage, setDefinitionMessage] = useState('');
   const [definitionFormError, setDefinitionFormError] = useState('');
   const loadedParts = useRef(initialParts);
+  const scrolledToPart = useRef(false);
   async function loadDefinitions() {
     setDefinitionsState('loading'); setDefinitionsError(''); setDefinitionsSlow(false);
     const slowTimer = window.setTimeout(() => setDefinitionsSlow(true), 1800);
@@ -90,6 +91,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     setConflict(false); setError(''); setInvalidId('');
   }, [initialParts, initialFooter]);
   useEffect(() => { setParts(onTargets); }, [nodes]);
+  useEffect(() => { if (scrolledToPart.current || !window.location.hash.startsWith('#part-')) return; const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); if (target) { scrolledToPart.current = true; target.scrollIntoView(); } }, [parts]);
   useEffect(() => { onChange(parts, footer); }, [parts, footer]);
   useEffect(() => { onDirtyChange(dirty); }, [dirty]);
   function editPart(id: string, fields: Partial<DirectPart>) { setParts(current => current.map(part => part.id === id ? { ...part, ...fields } : part)); setDirty(true); setInvalidId(''); setMessage(''); }
@@ -156,7 +158,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     finally { window.clearTimeout(slowTimer); setTransferBusy(false); setTransferSlow(false); }
   }
   const partEditor = (targetId: string, targetKind: DirectPart['targetKind']) => <div className="part-list">
-    {parts.filter(part => part.targetId === targetId && part.targetKind === targetKind).map(part => <fieldset className="part-fields" key={part.id}>
+    {parts.filter(part => part.targetId === targetId && part.targetKind === targetKind).map(part => <fieldset className="part-fields" id={`part-${part.id}`} key={part.id}>
       <legend>Participant</legend>
       <label>Participant form<select aria-label="Participant form" value={part.kind} onChange={event => { const kind = event.target.value as DirectPart['kind']; editPart(part.id, kind === 'reference' ? { kind, value: '', role: '', name: '', participantId: definitions[0]?.id ?? null, referenceMode: 'name', participant: definitions[0] } : { kind, value: '', role: '', name: '', participantId: null, referenceMode: null, participant: undefined }); }}><option value="blank">Blank</option><option value="text">Text or group</option><option value="role">Role</option><option value="structured">Role and optional name</option>{(definitions.length > 0 || part.kind === 'reference') && <option value="reference">Saved Participant</option>}</select></label>
       {part.kind === 'text' && <label>Participant text<input aria-label="Participant text" maxLength={500} value={part.value} onChange={event => editPart(part.id, { value: event.target.value })}/></label>}
