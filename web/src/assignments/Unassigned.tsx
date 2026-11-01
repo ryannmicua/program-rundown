@@ -46,10 +46,10 @@ export function Unassigned() {
         {(query || programId != null) && <button type="button" onClick={() => { setQuery(''); setProgramId(null); }}>Clear filters</button>}
       </div>
       {!parts.length && <div className="review-empty"><h3>All assignments have names</h3><p>There are no blank or role-only Parts to review. New Parts will appear here until they receive a name.</p><a className="primary" href="/">Open Programs</a></div>}
-      {parts.length > 0 && !filtered.length && <div className="review-empty"><h3>No assignments match these filters</h3><p>Try a different search, choose All Programs, or clear the filters to see every assignment awaiting a name.</p><button type="button" onClick={() => { setQuery(''); setProgramId(null); }}>Clear filters</button></div>}
+      {parts.length > 0 && !filtered.length && <div className="review-empty"><h3>No assignments match these filters</h3><p>Try a different search, choose All Programs, or show every assignment awaiting a name.</p><button type="button" onClick={() => { setQuery(''); setProgramId(null); }}>Show all assignments</button></div>}
       {filtered.length > 0 && <ul className="review-list">{filtered.map(part => <li key={`${part.programId}:${part.id}`}>
         <div><a href={`/programs/${part.programId}#part-target-${part.targetKind}-${encodeURIComponent(part.targetId)}`}>{part.targetPath}</a><p>{part.programTitle}{part.eventName ? ` · ${part.eventName}` : ''}</p>
-          {part.role && <p><strong>{part.role}</strong>{part.kind === 'reference' && part.participant?.name ? ` · ${part.participant.name}` : ''}</p>}
+          {(part.role || part.participant?.role) && <p><strong>{part.role || part.participant?.role}</strong>{part.participant?.name ? ` · ${part.participant.name}` : ' · awaiting a name'}</p>}
           {part.kind === 'blank' && <p>Blank participant</p>}{part.extraInfo && <p className="note-text">{part.extraInfo}</p>}
         </div>
         <a className="review-open" href={`/programs/${part.programId}#part-target-${part.targetKind}-${encodeURIComponent(part.targetId)}`}>Open Program editor</a>

@@ -20,7 +20,10 @@ test('coordinator reviews an unnamed Part, opens its editor, and sees the saved 
     await expect(page.getByRole('status').filter({ hasText: 'Parts and Footer saved.' })).toBeVisible();
     await page.getByRole('link', { name: 'Assignments awaiting a name' }).click();
     await expect(page.getByRole('heading', { name: 'Assignments awaiting a name' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Opening › Review Placeholder Item' })).toBeVisible();
+    await page.getByRole('searchbox', { name: 'Search assignments' }).fill('No Such Placeholder');
+    await expect(page.getByText('No assignments match these filters')).toBeVisible();
+    await page.getByRole('button', { name: 'Show all assignments' }).click();
+    await expect(page.getByRole('link', { name: 'Review Placeholder Item' })).toBeVisible();
     await page.getByRole('link', { name: 'Open Program editor' }).click();
     await expect(page).toHaveURL(/#part-target-item-/);
     await page.getByLabel('Intentionally not listed').check();

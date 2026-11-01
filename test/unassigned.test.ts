@@ -10,6 +10,7 @@ it('classifies blank and unnamed role assignments while preserving free text and
   expect(awaitsNamedAssignment({ ...base, kind: 'role' })).toBe(true);
   expect(awaitsNamedAssignment({ ...base, kind: 'structured', name: 'Alex Placeholder' })).toBe(false);
   expect(awaitsNamedAssignment({ ...base, kind: 'reference', participant: { role: 'Reader', name: '', honorific: '', position: '', organization: '', subtitle: '' } })).toBe(true);
+  expect(awaitsNamedAssignment({ ...base, kind: 'text', value: '   ' })).toBe(true);
   expect(awaitsNamedAssignment({ ...base, kind: 'text', value: 'Congregation' })).toBe(false);
   expect(awaitsNamedAssignment({ ...base, kind: 'text', value: 'TBA' })).toBe(false);
 });
