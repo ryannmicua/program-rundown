@@ -3,16 +3,16 @@ import type { DatabaseSync } from 'node:sqlite';
 import { headerValues, validateHeader, type Program } from '../domain/programs.js';
 import { readContent } from './content.js';
 import { readParts } from './parts.js';
+import { programAccessSql } from '../domain/access.js';
 
-const columns = `id, title, subtitle, date, start_time AS startTime, end_time AS endTime,
+const columns = `id, title, subtitle, date, start_time AS startTime, end_time AS endTime, event_id AS eventId,
   CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = programs.id) THEN 'Published' ELSE 'Draft' END AS status, version`;
 export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/programs', coordinator);
-  // Standalone access belongs to the creating coordinator. Event access is added in U8.
-  const find = (id: number, owner: number) => db.prepare(`SELECT ${columns} FROM programs WHERE id = ? AND owner_id = ?`).get(id, owner) as Program | undefined;
+  const find = (id: number, owner: number) => db.prepare(`SELECT ${columns} FROM programs WHERE id = ? AND ${programAccessSql()}`).get(id, owner, owner) as Program | undefined;
   router.get('/api/programs', (_req, res) => {
-    res.json({ programs: db.prepare(`SELECT ${columns} FROM programs WHERE owner_id = ? ORDER BY id DESC`).all(res.locals.user.id) });
+    res.json({ programs: db.prepare(`SELECT ${columns} FROM programs WHERE ${programAccessSql()} ORDER BY id DESC`).all(res.locals.user.id, res.locals.user.id) });
   });
   router.post('/api/programs', (req, res) => {
     const errors = validateHeader(req.body, false);
@@ -35,7 +35,7 @@ export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
     if (Object.keys(errors).length) return res.status(400).json({ error: 'Check the Header fields.', errors });
     const header = headerValues(req.body, previous);
     // The revision check and write are one SQLite statement, including across app processes.
-    const result = db.prepare('UPDATE programs SET title = ?, subtitle = ?, date = ?, start_time = ?, end_time = ?, version = version + 1 WHERE id = ? AND owner_id = ? AND version = ?').run(header.title, header.subtitle, header.date, header.startTime, header.endTime, id, res.locals.user.id, req.body.version);
+    const result = db.prepare(`UPDATE programs SET title = ?, subtitle = ?, date = ?, start_time = ?, end_time = ?, version = version + 1 WHERE id = ? AND ${programAccessSql()} AND version = ?`).run(header.title, header.subtitle, header.date, header.startTime, header.endTime, id, res.locals.user.id, res.locals.user.id, req.body.version);
     if (!result.changes) return res.status(409).json({ error: 'This Draft changed since you opened it. Your entries are kept. Reload the saved Draft, then review and reapply your changes.' });
     res.json({ program: find(id, res.locals.user.id) });
   });

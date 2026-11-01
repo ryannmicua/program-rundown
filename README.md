@@ -7,6 +7,7 @@ See [docs/build-plan.md](docs/build-plan.md) for the architecture, vertical slic
 Coordinators can create, reopen, and edit standalone Draft Program Headers, with optional dates and independent start/end times.
 They can compose and reorder a Draft's rundown of Sections and Items.
 They can publish a Program to a reader link that anyone can open and print without signing in.
+They can group complete Programs under an optional Event, ordered and optionally grouped by date, with a reader link that lists only its Published Programs.
 The signed-in shell also provides optional dev feedback.
 
 Use Node.js 24. Install with `npm ci`, then run `npm run build`.

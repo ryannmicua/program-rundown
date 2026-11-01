@@ -29,6 +29,19 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .program-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .program-list { list-style: none; padding: 0; }
 .program-list li { padding: 1.5rem 0; border-top: 1px solid #d6ded4; }
+.event-manager { margin-top: 1.5rem; }
+.event-list, .event-program-order { padding-left: 1.25rem; }
+.event-list li, .event-program-order li { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem; border-top: 1px solid #d6ded4; padding: .85rem 0; }
+.event-list li > span { color: #607771; margin-left: auto; }
+.link-button { border: 0; background: transparent; color: #225f58; text-decoration: underline; padding: 0; font: inherit; font-weight: 650; }
+.event-create { display: grid; gap: .65rem; max-width: 32rem; margin-top: 1.5rem; }
+.event-name-form { display: grid; gap: .65rem; max-width: 32rem; margin: 1rem 0; }
+.event-name-form input { width: 100%; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
+.event-create input, .event-dates input { width: 100%; padding: .7rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
+.event-toggle, .event-program-option { display: flex; align-items: center; gap: .6rem; margin: 1rem 0; }
+.event-program-option { padding: .4rem 0; }
+.event-reader-group { border-top: 1px solid #d6ded4; padding: 1rem 0; }
+.event-reader-group li { margin: .8rem 0; }
 .program-list a { font-weight: 650; overflow-wrap: anywhere; }
 .draft-badge { display: inline-block; font-size: .75rem; padding: .2rem .5rem; margin-left: .75rem; border: 1px solid #b5c6bf; border-radius: 1rem; }
 .header-summary { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-bottom: 1.5rem; }

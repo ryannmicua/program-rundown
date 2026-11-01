@@ -11,7 +11,10 @@ import { readConfig } from '../src/config.js';
 export async function listen(app: ReturnType<typeof express>) {
   const server = await new Promise<Server>(resolve => { const server = app.listen(0, '127.0.0.1', () => resolve(server)); });
   const address = server.address() as { port: number };
-  return { server, origin: `http://127.0.0.1:${address.port}`, close: () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) };
+  return { server, origin: `http://127.0.0.1:${address.port}`, close: () => new Promise<void>((resolve, reject) => {
+    server.close(error => error ? reject(error) : resolve());
+    server.closeAllConnections();
+  }) };
 }
 export async function mockIssuer() {
   const app = express();
