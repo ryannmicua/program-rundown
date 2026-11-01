@@ -43,6 +43,7 @@ It also creates `Example Published Program`, already published, so its `/p/<id>`
 That Program has the subtitle `A day of gratitude` and a nested rundown: a `featured` Section containing the `Morning Service` mini-program (with a `Dedication` Section) and a `Closing Program` mini-program with an unheaded labelled Section.
 `Community Gathering` includes an Alex Placeholder definition reused in another Program, direct Parts, an intentionally unlisted Part, and an ordered `Pianist` Footer role.
 It also creates two date-grouped Events with placeholder rundowns: `Sabbath` (Vesper, Sabbath School, Divine Worship, and AY across two weeks, some published) and `Example Conference` (two dated sessions plus an undated `Conference Welcome`).
+It saves `Example Worship Template` from `Community Gathering` once for the configured coordinator.
 The seed uses placeholder names only and never opens feedback storage.
 The configured coordinator owns every demo Program and Event and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, Participant definitions, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
@@ -119,6 +120,24 @@ Each listed Program opens at `/e/<id>/p/<programId>`, with the same presentation
 | `PUT /api/events/:id/programs` | Replace the linked Programs with an ordered `programIds` list; Programs omitted from the list are unlinked. |
 | `GET /api/public/events/:id` | Anonymous read of an Event and its Published Programs only. |
 | `GET /api/public/events/:id/programs/:programId` | Anonymous read of a Published Program linked to that Event; Drafts and other Programs return 404. |
+
+## Save and use a template
+
+Save the Header, rundown, and Parts and Footer, then enter a name under **Save as template** in the Program editor and choose **Save as template**.
+Saving stays disabled while any of them has unsaved changes. The template belongs to your account, not the Program's Event, and saving leaves the Program unchanged.
+Open **Your templates** from the Programs list, or `/templates`, and choose **Preview and create Draft** for a template.
+Enter a title, an optional date, and an optional Event you coordinate, then choose **Create Draft** to open the new Draft.
+The Draft copies the nested rundown, Footer roles, and Parts in order with their extra info.
+People are not copied: direct names and Participant references are cleared, keeping only a role placeholder where the Part or Participant had a role.
+Header dates and times, including mini-program dates and times, are not copied, and the Draft never inherits publication status.
+Later edits to the source Program, the template, or a created Draft do not change the others.
+
+| Endpoint | Behavior |
+| --- | --- |
+| `GET /api/templates` | List the signed-in coordinator's own templates. |
+| `POST /api/templates` | Save a template with `name` and the `programId` of a Program you manage. |
+| `GET /api/templates/:id` | Read an owned template's `nodes`, `parts`, and `footer` snapshot; other accounts' templates return 404. |
+| `POST /api/templates/:id/programs` | Create a Draft from an owned template with `title` and optional `date` and `eventId`. |
 
 ## Run the container
 
