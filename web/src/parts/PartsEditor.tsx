@@ -69,7 +69,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
       const data = await response.json();
       if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load Programs.');
       setTransferPrograms(data.programs || []);
-    } catch (error) { setTransferState('error'); setTransferError(window.navigator.onLine ? error instanceof Error ? error.message : 'Could not load Programs.' : 'You are offline. Reconnect, then reload Programs to choose a destination.'); }
+    } catch (error) { setTransferState('error'); setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load Programs.') : 'You are offline. Reconnect, then reload Programs to choose a destination.'); }
   }
   useEffect(() => {
     if (!transferPartId) return;
@@ -80,7 +80,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     fetch(`/api/programs/${transferProgramId}`).then(async response => { const data = await response.json(); if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load destination.');
       const targets = [...(data.nodes || []).map((node: ContentNode) => ({ id: node.id, kind: node.kind as DirectPart['targetKind'], label: node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'item' ? 'Untitled Item' : 'Untitled mini-program') })), ...(data.footer || []).map((role: FooterRole) => ({ id: role.id, kind: 'footer' as const, label: `Footer: ${role.title}` }))].map(target => ({ ...target, parts: (data.parts || []).filter((part: DirectPart) => part.targetId === target.id && part.targetKind === target.kind) }));
       if (current) { setTransferTargets(targets); setTransferTarget(targets[0] ? `${targets[0].kind}:${targets[0].id}` : ''); setTransferState('ready'); }
-    }).catch(error => { if (current) { setTransferError(window.navigator.onLine ? error instanceof Error ? error.message : 'Could not load destination.' : 'You are offline. Reconnect, then reload the destination.'); setTransferState('error'); } }).finally(() => window.clearTimeout(slowTimer));
+    }).catch(error => { if (current) { setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load destination.') : 'You are offline. Reconnect, then reload the destination.'); setTransferState('error'); } }).finally(() => window.clearTimeout(slowTimer));
     return () => { current = false; window.clearTimeout(slowTimer); };
   }, [transferPartId, transferProgramId]);
   useEffect(() => { try { if (Object.values(definitionDraft).some(Boolean)) window.sessionStorage.setItem(definitionDraftKey, JSON.stringify({ id: editingDefinition, fields: definitionDraft })); else window.sessionStorage.removeItem(definitionDraftKey); } catch { /* keep the form available in this page */ } }, [definitionDraft, editingDefinition, definitionDraftKey]);
@@ -155,7 +155,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
       const action = operation === 'move' ? 'moved' : 'copied';
       setTransferMessage(`Part ${action} to ${target.label}. Review the updated Program${targetProgram.id === program.id ? '' : `, then open ${targetProgram.title} to review the destination`}.`);
       setTransferPartId('');
-    } catch { setTransferError(window.navigator.onLine ? 'Could not connect. Both Programs are unchanged. Try again.' : 'You are offline. Both Programs are unchanged. Reconnect, then try again.'); }
+    } catch { setTransferError(window.navigator.onLine ? 'Could not confirm the result. Reload both Programs before trying again.' : 'You are offline. Reconnect and reload both Programs to confirm the result before trying again.'); }
     finally { window.clearTimeout(slowTimer); setTransferBusy(false); setTransferSlow(false); }
   }
   const partEditor = (targetId: string, targetKind: DirectPart['targetKind']) => <div className="part-list">

@@ -65,6 +65,10 @@ it('copies everything with its shared reference and rejects cross-Event, standal
     expect((await send(destinationProgram.id, target.id, target.kind, 1)).status).toBe(409);
     const latestSource = await fetch(`${f.origin}/api/programs/${sourceProgram.id}`, { headers: { cookie } }).then(response => response.json());
     expect(latestSource.parts.some((entry: { id: string }) => entry.id === part.id)).toBe(true);
+    f.issuer.setSubject('other-coordinator-placeholder');
+    const unauthorized = await f.signIn();
+    expect((await fetch(`${f.origin}/api/programs/${sourceProgram.id}/parts/${part.id}/transfer`, { method: 'POST', headers: { cookie: unauthorized, origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ destinationProgramId: destinationProgram.id, destinationTargetId: target.id, destinationTargetKind: target.kind, operation: 'move', sourceVersion: latestSource.program.version, destinationVersion: destination.program.version }) })).status).toBe(403);
+    expect((await fetch(`${f.origin}/api/programs/${sourceProgram.id}`, { headers: { cookie } }).then(response => response.json())).parts.some((entry: { id: string }) => entry.id === part.id)).toBe(true);
   } finally { await f.close(); }
 });
 

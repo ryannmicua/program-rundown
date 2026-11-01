@@ -19,8 +19,10 @@ test('moves a shared Participant between Sabbath Programs and keeps occupied des
     const source = page.getByRole('region', { name: 'Participants for Welcome' });
     await source.getByRole('button', { name: 'Move or copy Part' }).click();
     await page.getByLabel('Destination Program').selectOption(String(destinationId));
+    await page.getByLabel('Destination Item, block, or Footer role').selectOption({ label: 'Main Program' });
     await expect(page.getByText('Existing destination Parts will stay in place:')).toBeVisible();
-    await expect(page.getByRole('list').getByText('Congregation Placeholder')).toBeVisible();
+    const transfer = page.getByRole('region', { name: 'Move or copy Dr. Alex Placeholder' });
+    await expect(transfer.getByText(/Congregation Placeholder — Existing assignment stays/)).toBeVisible();
     await source.getByRole('button', { name: 'Move selected Part here' }).click();
     await expect(page.getByRole('status')).toContainText('Part moved to Main Program');
     await expect(source.locator('.part-fields')).toHaveCount(0);

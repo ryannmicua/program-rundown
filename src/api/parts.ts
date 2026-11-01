@@ -83,7 +83,8 @@ export function partsRoutes(db: DatabaseSync, coordinator: RequestHandler) {
       const part = { ...sourcePart, intentionallyNotListed: Boolean(sourcePart.intentionallyNotListed), participant: sourcePart.participantId == null ? undefined : { role: sourcePart.participantRole || '' } } as DirectPart;
       const values = operation === 'copy' ? copiedPart(part, copyMode as CopyMode) : part;
       if (operation === 'move') db.prepare('DELETE FROM parts WHERE program_id = ? AND id = ?').run(source.id, sourcePart.id);
-      const insertedId = operation === 'move' ? sourcePart.id : randomUUID();
+      const targetIdCollision = destination.id !== source.id && db.prepare('SELECT 1 FROM parts WHERE program_id = ? AND id = ?').get(destination.id, sourcePart.id);
+      const insertedId = operation === 'move' && !targetIdCollision ? sourcePart.id : randomUUID();
       db.prepare('INSERT INTO parts (program_id, id, target_id, target_kind, kind, value, role, name, extra_info, intentionally_not_listed, position, participant_id, reference_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .run(destination.id, insertedId, destinationTargetId, destinationTargetKind, values.kind, values.value, values.role, values.name, values.extraInfo, values.intentionallyNotListed ? 1 : 0, position.position, values.kind === 'reference' ? sourcePart.participantId ?? null : null, values.kind === 'reference' ? sourcePart.referenceMode ?? null : null);
       db.exec('COMMIT');
