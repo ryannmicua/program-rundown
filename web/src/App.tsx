@@ -4,9 +4,11 @@ import { Reader } from './reader/Reader.js';
 import { Events } from './events/Events.js';
 import { EventReader } from './events/EventReader.js';
 import { Templates } from './templates/Templates.js';
+import { ParticipantList } from './participants/ParticipantList.js';
 const Feedback = lazy(() => import('./feedback/Feedback.js'));
 type Session = { user: { label: string; coordinator: boolean } | null; feedbackEnabled: boolean };
 export function App() {
+  if (/^\/(events\/\d+|programs\/\d+)\/participants$/.test(window.location.pathname)) return <WorkspaceApp><ParticipantList/></WorkspaceApp>;
   if (window.location.pathname.startsWith('/e/')) return <EventReader/>;
   if (window.location.pathname.startsWith('/events')) return <WorkspaceApp><Events/></WorkspaceApp>;
   if (window.location.pathname.startsWith('/templates')) return <WorkspaceApp><Templates/></WorkspaceApp>;

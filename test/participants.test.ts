@@ -2,6 +2,41 @@ import { expect, it } from 'vitest';
 import { openProduct } from '../src/db/product.js';
 import { fixture } from './support.js';
 
+it('aggregates Event and standalone assignments by definition and Part location, with Program filtering', async () => {
+  const f = await fixture();
+  try {
+    const cookie = await f.signIn();
+    const send = (path: string, body?: unknown, method = 'GET') => fetch(`${f.origin}${path}`, { method, headers: { cookie, origin: f.origin, ...(body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const event = (await (await send('/api/events', { name: 'Sabbath Placeholder' }, 'POST')).json()).event;
+    const create = async (title: string) => (await (await send('/api/programs', { title }, 'POST')).json()).program;
+    const first = await create('Divine Worship Placeholder'); const second = await create('Vesper Placeholder');
+    await send(`/api/events/${event.id}/programs`, { programIds: [first.id, second.id] }, 'PUT');
+    const nodes = (prefix: string) => [
+      { id: `${prefix}-section`, parentId: null, kind: 'section', label: 'Worship Placeholder', detail: '', startTime: null, endTime: null },
+      { id: `${prefix}-nested`, parentId: `${prefix}-section`, kind: 'section', label: 'Nested Placeholder', detail: '', startTime: null, endTime: null },
+      { id: `${prefix}-item`, parentId: `${prefix}-nested`, kind: 'item', label: 'Prayer Placeholder', detail: '', startTime: null, endTime: null },
+    ];
+    await send(`/api/programs/${first.id}/content`, { version: 1, nodes: nodes('first') }, 'PUT');
+    await send(`/api/programs/${second.id}/content`, { version: 1, nodes: nodes('second') }, 'PUT');
+    const definition = (await (await send('/api/participants', { role: 'Speaker', name: 'Alex Placeholder', honorific: '', position: '', organization: '', subtitle: '' }, 'POST')).json()).participant;
+    const part = (id: string, targetId: string, kind: string, extras = {}) => ({ id, targetId, targetKind: 'item', kind, value: kind === 'text' ? 'Congregation Placeholder' : '', role: '', name: '', extraInfo: '', intentionallyNotListed: false, ...extras });
+    await send(`/api/programs/${first.id}/parts`, { version: 2, parts: [part('first-speaker', 'first-item', 'reference', { participantId: definition.id, referenceMode: 'name' }), part('parallel-speaker', 'first-item', 'reference', { participantId: definition.id, referenceMode: 'role' }), part('first-text', 'first-item', 'text')], footer: [{ id: 'footer', title: 'Pianist Placeholder' }] }, 'PUT');
+    await send(`/api/programs/${second.id}/parts`, { version: 2, parts: [part('second-speaker', 'second-item', 'reference', { participantId: definition.id, referenceMode: 'role' }), part('second-text', 'second-item', 'text')], footer: [] }, 'PUT');
+    const all = await (await send(`/api/events/${event.id}/participants`)).json();
+    expect(all.namedParticipants).toHaveLength(1);
+    expect(all.namedParticipants[0].assignments.map((item: { partId: string }) => item.partId)).toEqual(['first-speaker', 'parallel-speaker', 'second-speaker']);
+    expect(all.textAssignments.map((item: { value: string }) => item.value)).toEqual(['Congregation Placeholder', 'Congregation Placeholder']);
+    expect(all.textAssignments[0].assignments[0].url).toContain('#part-first-text');
+    await expect((await send(`/api/events/${event.id}/participants?programId=${second.id}`)).json()).resolves.toMatchObject({ namedParticipants: [expect.objectContaining({ assignments: [expect.objectContaining({ programId: second.id })] })], textAssignments: [expect.objectContaining({ assignments: [expect.objectContaining({ programId: second.id })] })] });
+    await send(`/api/participants/${definition.id}`, { role: 'Guest Speaker', name: 'Alex Updated Placeholder', honorific: '', position: '', organization: '', subtitle: '' }, 'PATCH');
+    expect((await (await send(`/api/events/${event.id}/participants`)).json()).namedParticipants[0].name).toBe('Alex Updated Placeholder');
+    await send(`/api/programs/${first.id}/parts`, { version: 3, parts: [part('first-text', 'first-item', 'text')], footer: [{ id: 'footer', title: 'Pianist Placeholder' }] }, 'PUT');
+    expect((await (await send(`/api/events/${event.id}/participants`)).json()).namedParticipants[0].assignments.map((item: { partId: string }) => item.partId)).toEqual(['second-speaker']);
+    expect((await send(`/api/programs/${first.id}/participants`)).status).toBe(200);
+    expect((await send(`/api/events/${event.id}/participants?programId=99999`)).status).toBe(404);
+  } finally { await f.close(); }
+});
+
 it('creates shared definitions, keeps same-name identities distinct, and renders updated name and role references', async () => {
   const f = await fixture();
   try {

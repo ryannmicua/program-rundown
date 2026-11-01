@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }, { version: 9 }, { version: 10 }, { version: 11 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }, { version: 9 }, { version: 10 }, { version: 11 }, { version: 12 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -58,6 +58,7 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
       expect(db.prepare("SELECT p.title, p.date, e.name AS event FROM programs p JOIN events e ON e.id = p.event_id WHERE p.seed_key IN ('demo-sabbath-vesper', 'demo-sabbath-school', 'demo-divine-worship', 'demo-ay') ORDER BY p.event_position").all()).toEqual([
         { title: 'Vesper', date: '2026-11-06', event: 'Sabbath' }, { title: 'Sabbath School', date: '2026-11-07', event: 'Sabbath' }, { title: 'Divine Worship', date: '2026-11-07', event: 'Sabbath' }, { title: 'AY', date: '2026-11-07', event: 'Sabbath' },
       ]);
+      expect(db.prepare("SELECT p.id, d.name FROM parts p JOIN programs g ON g.id=p.program_id JOIN participants d ON d.id=p.participant_id WHERE g.seed_key='demo-divine-worship' AND p.id='demo-list-demo-divine-worship'").get()).toEqual({ id: 'demo-list-demo-divine-worship', name: 'Alex Placeholder' });
       const community = programs.find((program: { title: string }) => program.title === 'Community Gathering');
       db.prepare('UPDATE programs SET title = ?, subtitle = ?, date = ?, version = version + 1 WHERE id = ?').run('Edited Gathering', 'Saved subtitle', '2026-11-07', community.id);
       const owner = db.prepare('SELECT owner_id FROM programs WHERE id = ?').get(programs[0].id) as { owner_id: number };
@@ -85,10 +86,12 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
       expect(db.prepare("SELECT owner_id FROM participants WHERE seed_key = 'demo-speaker'").get()).toEqual({ owner_id: replacement.id });
       expect(db.prepare('SELECT owner_id FROM programs WHERE seed_key IS NULL').get()).toEqual({ owner_id: owner.owner_id });
       db.prepare("DELETE FROM parts WHERE id IN ('demo-welcome-speaker', 'demo-introit-leader')").run();
+      db.prepare("DELETE FROM parts WHERE id = 'demo-list-demo-divine-worship'").run();
       db.prepare("DELETE FROM participants WHERE seed_key = 'demo-reader'").run();
       const removed = db.prepare('SELECT id, version FROM programs ORDER BY id').all();
       seedProduct(env);
       expect(db.prepare("SELECT id FROM parts WHERE id IN ('demo-welcome-speaker', 'demo-introit-leader')").all()).toEqual([]);
+      expect(db.prepare("SELECT id FROM parts WHERE id = 'demo-list-demo-divine-worship'").all()).toEqual([]);
       expect(db.prepare("SELECT seed_key FROM participants ORDER BY seed_key").all()).toEqual([{ seed_key: 'demo-pianist-participant' }, { seed_key: 'demo-speaker' }]);
       expect(db.prepare('SELECT id, version FROM programs ORDER BY id').all()).toEqual(removed);
       db.prepare('DELETE FROM content_nodes').run();

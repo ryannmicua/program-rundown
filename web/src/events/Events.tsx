@@ -113,6 +113,7 @@ export function Events({ embedded = false }: { embedded?: boolean }) {
       <fieldset><legend>Add or remove Programs</legend>{available.map(program => <label className="event-program-option" key={program.id}><input type="checkbox" checked={selected.includes(program.id)} onChange={e => setSelected(e.target.checked ? [...selected, program.id] : selected.filter(id => id !== program.id))}/>{program.title} · {program.date || 'Undated'} · {program.status}</label>)}</fieldset>
       <button className="primary" disabled={busy} onClick={() => void savePrograms()}>{busy ? 'Saving…' : 'Save Program order and links'}</button>
       <p><a href={`/e/${editing.id}`}>Open anonymous Event reader</a></p>
+      <p><a href={`/events/${editing.id}/participants`}>View Event Participants</a></p>
     </>}
   </section>;
 }
