@@ -69,13 +69,17 @@ test('coordinator publishes a Program that readers can share and print on narrow
     } finally { await missingReader.close(); }
     const slowReader = await page.context().newPage();
     try {
+      let releaseProgram!: () => void;
+      const programHeld = new Promise<void>(resolve => { releaseProgram = resolve; });
       await slowReader.route('**/api/public/programs/**', async route => {
-        await new Promise(resolve => setTimeout(resolve, 2100));
+        await programHeld;
         await route.continue();
       });
       await slowReader.goto(`${app.origin}/p/${draftId}`);
-      await expect(slowReader.getByRole('status')).toContainText('Still loading this Program');
-      await expect(slowReader.locator('.loading-progress')).toBeVisible();
+      try {
+        await expect(slowReader.getByRole('status')).toContainText('Still loading this Program');
+        await expect(slowReader.locator('.loading-progress')).toBeVisible();
+      } finally { releaseProgram(); }
       await expect(slowReader.getByRole('heading', { name: 'Community Program' })).toBeVisible();
     } finally { await slowReader.close(); }
     const empty = await page.request.post(`${app.origin}/api/programs`, { headers: { origin: app.origin }, data: { title: 'Empty Example' } });
