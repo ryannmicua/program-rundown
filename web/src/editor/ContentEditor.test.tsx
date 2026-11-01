@@ -83,3 +83,13 @@ it('preserves conflict entries, reloads explicitly, and reapplies against the cu
   await screen.findByText('Rundown saved.');
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({ version: 2, nodes: [section, { ...item, label: 'Kept prayer' }] });
 });
+
+it('numbers nested Sections among Section siblings and names untitled mini-program parents by kind', () => {
+  const mini: ContentNode = { id: 'mini', parentId: 'opening', kind: 'mini-program', label: '', detail: '', startTime: null, endTime: null };
+  const nested: ContentNode = { id: 'nested', parentId: 'mini', kind: 'section', label: '', detail: '', startTime: null, endTime: null };
+  render(<ContentEditor program={program} initialNodes={[section, item, mini, nested, { ...nested, id: 'inner', parentId: 'opening' }]} onSaved={vi.fn()} onDirtyChange={vi.fn()} reload={vi.fn()}/>);
+  expect(screen.getByRole('region', { name: 'Mini-program: Untitled mini-program' })).toBeDefined();
+  expect(screen.getByRole('region', { name: 'Section 1 in Untitled mini-program: Unheaded' })).toBeDefined();
+  expect(screen.getByRole('region', { name: 'Section 1 in Opening: Unheaded' })).toBeDefined();
+  expect(screen.getByRole('button', { name: 'Move Untitled mini-program up' })).toBeDefined();
+});

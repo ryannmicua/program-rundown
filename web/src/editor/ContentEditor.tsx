@@ -38,10 +38,13 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
     } catch { setError(window.navigator.onLine ? 'Could not connect. Your rundown entries are kept. Try again.' : 'You are offline. Your rundown entries are kept. Reconnect, then try again.'); }
     finally { setBusy(false); }
   }
+  function displayName(node: ContentNode) {
+    return node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'mini-program' ? 'Untitled mini-program' : 'New Item');
+  }
   function controls(node: ContentNode) {
     const siblings = nodes.filter(other => other.parentId === node.parentId);
     const position = siblings.findIndex(other => other.id === node.id);
-    const name = node.label || 'unheaded Section';
+    const name = displayName(node);
     return <div className="node-actions">
       <button type="button" disabled={position === 0 || busy || conflict} aria-label={`Move ${name} up`} onClick={() => { change(moveSibling(nodes, node.id, -1)); setMessage(`${name} moved up. Save rundown to keep this order.`); }}>↑ Move up</button>
       <button type="button" disabled={position === siblings.length - 1 || busy || conflict} aria-label={`Move ${name} down`} onClick={() => { change(moveSibling(nodes, node.id, 1)); setMessage(`${name} moved down. Save rundown to keep this order.`); }}>↓ Move down</button>
@@ -59,11 +62,11 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
     </div>;
   }
   function renderNode(node: ContentNode, parent?: ContentNode) {
-    if (node.kind === 'item') return <li key={node.id}><div className="content-item" role="group" aria-label={`Item: ${node.label || 'New Item'}`}><h4>{node.label || 'New Item'}</h4>{fields(node)}{controls(node)}</div></li>;
+    if (node.kind === 'item') return <li key={node.id}><div className="content-item" role="group" aria-label={`Item: ${displayName(node)}`}><h4>{displayName(node)}</h4>{fields(node)}{controls(node)}</div></li>;
     const children = nodes.filter(child => child.parentId === node.id);
     const number = nodes.filter(other => other.parentId === node.parentId && other.kind === 'section').indexOf(node) + 1;
-    const title = node.kind === 'section' ? `Section ${number}${parent ? ` in ${parent.label || 'Unheaded Section'}` : ''}: ${node.label || 'Unheaded'}` : `Mini-program: ${node.label}`;
-    return <li key={node.id}><section className="content-section" aria-label={title}><h3>{node.label || 'Unheaded Section'}</h3>{fields(node)}{controls(node)}
+    const title = node.kind === 'section' ? `Section ${number}${parent ? ` in ${displayName(parent)}` : ''}: ${node.label || 'Unheaded'}` : `Mini-program: ${displayName(node)}`;
+    return <li key={node.id}><section className="content-section" aria-label={title}><h3>{displayName(node)}</h3>{fields(node)}{controls(node)}
       <ol className="content-items">{children.map(child => renderNode(child, node))}</ol>
       {node.kind === 'section' && <button type="button" onClick={() => add('item', node.id)}>Add Item</button>}
       <button type="button" onClick={() => add('section', node.id)}>Add Section</button><button type="button" onClick={() => add('mini-program', node.id)}>Add mini-program</button>

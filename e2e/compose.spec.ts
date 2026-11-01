@@ -33,7 +33,7 @@ test('composes and reorders Sections and Items with pointer and keyboard control
     let closing = editor.getByRole('region', { name: 'Section 2: Unheaded', exact: true });
     await closing.getByRole('button', { name: 'Add Item', exact: true }).click();
     await closing.getByLabel('Item label').fill('Closing Remarks');
-    await editor.getByRole('button', { name: 'Move unheaded Section up', exact: true }).click();
+    await editor.getByRole('button', { name: 'Move Unheaded Section up', exact: true }).click();
     await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();
     await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
     await page.reload();
