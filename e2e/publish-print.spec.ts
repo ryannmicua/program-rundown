@@ -13,7 +13,7 @@ test('coordinator publishes a Program that readers can share and print on narrow
     await page.getByLabel('End time', { exact: true }).fill('12:00');
     await page.getByRole('button', { name: 'Save Draft' }).click();
     await expect(page.getByRole('heading', { name: 'Community Program' })).toBeVisible();
-    await page.getByRole('button', { name: 'Add Section' }).click();
+    await page.getByRole('button', { name: 'Add top-level Section', exact: true }).click();
     await page.getByLabel('Section heading (optional)').fill('Welcome');
     await page.getByRole('button', { name: 'Add Item' }).click();
     await page.getByLabel('Item label').fill('Opening Remarks');

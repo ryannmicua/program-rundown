@@ -1,0 +1,52 @@
+import { test, expect } from '@playwright/test';
+import { fixture } from '../test/support.js';
+
+test('composes nested Sections and mini-programs with a subtitle and reads the same structure after publishing', async ({ page }) => {
+  const app = await fixture();
+  try {
+    await page.goto(`${app.origin}/signin`);
+    await page.getByRole('link', { name: 'Sign in', exact: true }).click();
+    await page.getByRole('link', { name: 'New Program' }).click();
+    await page.getByLabel('Title', { exact: true }).fill('Community Gathering');
+    await page.getByLabel('Subtitle (optional)').fill('A day of gratitude');
+    await page.getByLabel('Date', { exact: true }).fill('2026-11-07');
+    await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
+    const editor = page.getByRole('region', { name: 'Rundown editor' });
+    await editor.getByRole('button', { name: 'Add top-level Section', exact: true }).click();
+    let gathering = editor.getByRole('region', { name: 'Section 1: Unheaded' });
+    await gathering.getByLabel('Section heading (optional)').fill('Community Gathering');
+    gathering = editor.getByRole('region', { name: 'Section 1: Community Gathering' });
+    await gathering.getByRole('button', { name: 'Add mini-program', exact: true }).click();
+    const morning = editor.locator('.content-section').nth(1);
+    await morning.getByLabel('Mini-program title').fill('Morning Service');
+    await morning.getByLabel('Mini-program date (optional)').fill('2026-11-07');
+    await morning.getByRole('button', { name: 'Add Section', exact: true }).click();
+    let dedication = editor.getByRole('region', { name: 'Section 1: Unheaded' });
+    await dedication.getByLabel('Section heading (optional)').fill('Dedication');
+    dedication = editor.getByRole('region', { name: 'Section 1: Dedication' });
+    await dedication.getByRole('button', { name: 'Add Item', exact: true }).click();
+    await dedication.getByLabel('Item label', { exact: true }).fill('Prayer');
+    await dedication.getByLabel('Detail (optional)').fill('A placeholder detail.');
+    await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();
+    await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
+    const preview = editor.getByRole('region', { name: 'Rundown preview' });
+    await expect(preview.getByRole('heading', { name: 'Community Gathering' })).toBeVisible();
+    await expect(editor.locator('.program-renderer h1')).toHaveText('Community Gathering');
+    await expect(editor.locator('.reader-subtitle')).toHaveText('A day of gratitude');
+    await expect(preview.getByRole('heading', { name: 'Morning Service' })).toBeVisible();
+    await expect(preview.getByRole('heading', { name: 'Dedication' })).toBeVisible();
+    await page.getByRole('button', { name: 'Publish Program' }).click();
+    await expect(page.getByText('Program published. Anyone with the link can read and print it.')).toBeVisible();
+    const programId = /\/programs\/(\d+)$/.exec(page.url())![1];
+    await page.goto(`${app.origin}/p/${programId}`);
+    await expect(page.locator('.program-renderer h1')).toHaveText('Community Gathering');
+    await expect(page.getByText('A day of gratitude')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Morning Service' })).toBeVisible();
+    await expect(page.locator('.mini-program-date')).toHaveText('Saturday, November 7, 2026');
+    await expect(page.getByRole('heading', { name: 'Dedication' })).toBeVisible();
+    await expect(page.getByText('A placeholder detail.')).toBeVisible();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.getByRole('heading', { name: 'Morning Service' })).toBeVisible();
+    await expect(page.locator('.reader-actions')).toBeHidden();
+  } finally { await app.close(); }
+});

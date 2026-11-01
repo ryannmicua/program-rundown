@@ -15,11 +15,29 @@ export function seedProduct(env = process.env) {
     const identity = db.prepare('SELECT id FROM identities WHERE issuer = ? AND subject = ?').get(issuer, subject) as { id: number };
     db.prepare("INSERT OR IGNORE INTO coordinator_grants VALUES (?, 'dev')").run(identity.id);
     db.prepare("INSERT OR IGNORE INTO programs (owner_id, title, start_time, end_time, seed_key) VALUES (?, 'Community Gathering', '09:00', '12:00', 'standalone-community-gathering')").run(identity.id);
-    db.prepare("INSERT OR IGNORE INTO programs (owner_id, title, seed_key) VALUES (?, 'Example Published Program', 'standalone-published-example')").run(identity.id);
+    db.prepare("INSERT OR IGNORE INTO programs (owner_id, title, subtitle, seed_key) VALUES (?, 'Example Published Program', 'A day of gratitude', 'standalone-published-example')").run(identity.id);
     const published = db.prepare("SELECT id FROM programs WHERE seed_key = 'standalone-published-example'").get() as { id: number };
     db.prepare('INSERT OR IGNORE INTO program_publications (program_id) VALUES (?)').run(published.id);
     // A configured replacement tester must also manage all demo Programs, without resetting Headers.
     db.prepare('UPDATE programs SET owner_id = ? WHERE seed_key IS NOT NULL AND owner_id != ?').run(identity.id, identity.id);
+    if (!db.prepare('SELECT 1 FROM demo_content_seeds WHERE program_id = ?').get(published.id)) {
+      db.prepare("UPDATE programs SET subtitle = 'A day of gratitude' WHERE id = ? AND subtitle = ''").run(published.id);
+      if (!db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ?').get(published.id)) {
+        const block = (id: string, parentId: string | null, kind: 'section' | 'mini-program', label: string, options: Partial<ContentNode> = {}): ContentNode => ({ id, parentId, kind, label, detail: '', startTime: null, endTime: null, ...options });
+        const item = (id: string, parentId: string, label: string, detail = ''): ContentNode => ({ id, parentId, kind: 'item', label, detail, startTime: null, endTime: null });
+        writeContent(db, published.id, [
+          block('demo-main', null, 'section', 'Community Gathering', { blockLabel: 'featured' }),
+          block('demo-morning', 'demo-main', 'mini-program', 'Morning Service', { date: '2026-11-07', startTime: '09:00' }),
+          block('demo-dedication', 'demo-morning', 'section', 'Dedication'),
+          item('demo-welcome', 'demo-dedication', 'Welcome', 'A placeholder welcome.'),
+          block('demo-closing-mini', 'demo-main', 'mini-program', 'Closing Program', { endTime: '12:00' }),
+          block('demo-closing-section', 'demo-closing-mini', 'section', '', { blockLabel: 'unheaded-closing' }),
+          item('demo-thanks', 'demo-closing-section', 'Thanksgiving', 'A placeholder detail.'),
+        ]);
+        db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(published.id);
+      }
+      db.prepare('INSERT INTO demo_content_seeds VALUES (?)').run(published.id);
+    }
     const program = db.prepare("SELECT id FROM programs WHERE seed_key = 'standalone-community-gathering'").get() as { id: number };
     if (!db.prepare('SELECT 1 FROM demo_content_seeds WHERE program_id = ?').get(program.id)) {
       // Seed this slice once, and never replace a coordinator's existing rundown.
@@ -45,5 +63,5 @@ export function seedProduct(env = process.env) {
 }
 if (process.argv[1]?.endsWith('/seed.ts') || process.argv[1]?.endsWith('/seed.js')) {
   seedProduct();
-  console.log('U3 demo ready: Community Gathering with ordered Sections and Items. Existing edits and feedback preserved.');
+  console.log('U5 demo ready: nested Sections, mini-programs, and a Program subtitle. Existing edits and feedback preserved.');
 }

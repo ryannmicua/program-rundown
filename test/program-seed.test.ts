@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -41,16 +41,17 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
     const { programs } = await response.json();
     expect(programs).toHaveLength(2);
     expect(programs.find((program: { title: string }) => program.title === 'Community Gathering')).toMatchObject({ status: 'Draft', date: null, startTime: '09:00', endTime: '12:00' });
-    expect(programs.find((program: { title: string }) => program.title === 'Example Published Program')).toMatchObject({ status: 'Published' });
+    expect(programs.find((program: { title: string }) => program.title === 'Example Published Program')).toMatchObject({ status: 'Published', subtitle: 'A day of gratitude' });
     const db = openProduct(f.config.productPath);
     try {
       const community = programs.find((program: { title: string }) => program.title === 'Community Gathering');
-      db.prepare('UPDATE programs SET title = ?, date = ?, version = version + 1 WHERE id = ?').run('Edited Gathering', '2026-11-07', community.id);
+      db.prepare('UPDATE programs SET title = ?, subtitle = ?, date = ?, version = version + 1 WHERE id = ?').run('Edited Gathering', 'Saved subtitle', '2026-11-07', community.id);
       const owner = db.prepare('SELECT owner_id FROM programs WHERE id = ?').get(programs[0].id) as { owner_id: number };
       db.prepare('INSERT INTO programs (owner_id, title) VALUES (?, ?)').run(owner.owner_id, 'Unrelated Draft');
+      db.prepare("UPDATE programs SET subtitle = 'Saved custom subtitle' WHERE seed_key = 'standalone-published-example'").run();
       const before = db.prepare('SELECT * FROM programs ORDER BY id').all();
       const sessions = db.prepare('SELECT * FROM sessions').all();
-      expect(db.prepare('SELECT label FROM content_nodes ORDER BY position').all()).toEqual([
+      expect(db.prepare('SELECT label FROM content_nodes WHERE program_id = ? ORDER BY position').all(programs.find((program: { title: string }) => program.title === 'Community Gathering').id)).toEqual([
         { label: 'Call to Worship' }, { label: '*Introit' }, { label: 'Prayer' }, { label: 'The Spoken Word' }, { label: 'Reading' }, { label: '' }, { label: 'Closing Remarks' },
       ]);
       db.prepare("UPDATE content_nodes SET detail = 'Edited detail' WHERE id = 'demo-introit'").run();

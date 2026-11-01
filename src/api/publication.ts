@@ -2,7 +2,7 @@ import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { readContent } from './content.js';
 
-const programColumns = `p.id, p.title, p.date, p.start_time AS startTime,
+const programColumns = `p.id, p.title, p.subtitle, p.date, p.start_time AS startTime,
   p.end_time AS endTime, 'Published' AS status, p.version`;
 
 export function publicationRoutes(db: DatabaseSync, coordinator: RequestHandler) {

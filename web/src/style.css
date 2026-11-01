@@ -62,10 +62,12 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .reader-page { max-width: 860px; padding-top: 2rem; }
 .reader-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
 .reader-listing { background: #fffefa; padding: clamp(1.25rem, 5vw, 4rem); border: 1px solid #d6ded4; border-radius: 10px; }
+.program-renderer { max-width: 860px; margin: 2rem auto; }
 .reader-header { display: block; text-align: center; border: 0; padding: 0 0 2rem; }
 .reader-header h1 { margin: 0 auto 1.5rem; font-family: Georgia, serif; font-size: clamp(2.2rem, 7vw, 3.5rem); font-weight: 400; letter-spacing: .12em; line-height: 1.2; text-transform: uppercase; overflow-wrap: anywhere; }
 .reader-header p { color: #54736b; }
 .reader-header .reader-meta { margin: 0; font-size: .88rem; letter-spacing: .2em; line-height: 1.8; text-transform: uppercase; }
+.reader-header .reader-subtitle { margin: .75rem auto 0; max-width: 42rem; font-family: Georgia, serif; font-size: 1.2rem; line-height: 1.5; }
 .reader-meta-separator { display: inline-block; padding: 0 .65em; }
 .reader-listing .rundown-preview { margin-top: 0; }
 .reader-listing .preview-section { margin: 2.5rem 0; text-align: center; }
@@ -74,6 +76,9 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .reader-listing .preview-section li { margin: 2rem auto; text-align: center; }
 .reader-listing .preview-section li strong { display: block; line-height: 1.5; }
 .reader-listing .preview-section li .note-text { margin: .35rem auto 0; }
+.reader-listing .preview-section .preview-section { border-top: 1px solid #d6ded4; padding-top: 1rem; }
+.reader-listing .preview-mini-program { margin: 2rem 0; padding: 1.25rem; border: 1px solid #d6ded4; border-radius: 8px; }
+.mini-program-date { color: #607771; font-size: .85rem; }
 .reader-empty { padding: 3rem 0; text-align: center; color: #607771; }
 .loading-progress { height: 4px; width: min(100%, 30rem); margin-top: 1rem; background: linear-gradient(90deg, #225f58 0 35%, #d6ded4 35% 100%); background-size: 200% 100%; animation: loading-progress 1.2s linear infinite; }
 @keyframes loading-progress { to { background-position: -200% 0; } }

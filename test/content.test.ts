@@ -17,7 +17,8 @@ it('composes, edits, reorders and removes content with atomic revision and paren
     expect((await result.json()).program.version).toBe(2);
     const read = () => fetch(`${f.origin}/api/programs/${program.id}`, { headers: { cookie } }).then(r => r.json());
     const before = await read();
-    expect(before.nodes).toEqual(nodes);
+    const canonical = (items: typeof nodes) => items.map(node => ({ ...node, date: null, blockLabel: '' }));
+    expect(before.nodes).toEqual(canonical(nodes));
     for (const invalid of [
       { version: 1, nodes: [...nodes].reverse() },
       { version: 2, nodes: [{ ...item, parentId: null }] },
@@ -25,7 +26,7 @@ it('composes, edits, reorders and removes content with atomic revision and paren
       { version: 2, nodes: [section, { ...item, parentId: 'missing' }] },
       { version: 2, nodes: [section, { ...item, startTime: '25:00' }] },
       { version: 2, nodes: [section, section] },
-      { version: 2, nodes: [{ ...section, kind: 'mini-program' }] },
+      { version: 2, nodes: [{ ...section, kind: 'mini-program', label: '' }] },
     ]) {
       result = await send(`/${program.id}/content`, invalid);
       expect([400, 409]).toContain(result.status);
@@ -34,10 +35,10 @@ it('composes, edits, reorders and removes content with atomic revision and paren
     nodes = [closing, section, { ...nodes[3], detail: 'Edited prayer' }, item];
     expect((await send(`/${program.id}/content`, { version: 2, nodes })).status).toBe(200);
     await f.restart();
-    expect((await read()).nodes).toEqual(nodes);
+    expect((await read()).nodes).toEqual(canonical(nodes));
     // Removing a Section and its Items leaves the unheaded group in place.
     expect((await send(`/${program.id}/content`, { version: 3, nodes: [closing] })).status).toBe(200);
-    expect((await read()).nodes).toEqual([closing]);
+    expect((await read()).nodes).toEqual(canonical([closing]));
     // Header and content edits share one revision counter.
     expect((await send(`/${program.id}`, { title: 'Stale', version: 3 }, 'PATCH')).status).toBe(409);
     expect((await fetch(`${f.origin}/api/programs/${program.id}/content`, { method: 'PUT', headers: { origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ version: 4, nodes: [] }) })).status).toBe(401);
@@ -58,8 +59,8 @@ it('saves the largest valid rundown and rejects text beyond the total limit', as
     const id = (n: number) => String(n).padStart(80, 'x');
     const escaped = (length: number) => '\u0001'.repeat(length);
     const nodes = Array.from({ length: contentLimits.nodes }, (_, n) => n === 0
-      ? { id: id(n), parentId: null, kind: 'section', label: escaped(100), detail: '', startTime: '09:00', endTime: '09:30' }
-      : { id: id(n), parentId: id(0), kind: 'item', label: escaped(100), detail: escaped(n <= 3 ? 10000 : 0), startTime: '09:00', endTime: '09:30' });
+      ? { id: id(n), parentId: null, kind: 'section', label: escaped(100), detail: '', startTime: '09:00', endTime: '09:30', date: null, blockLabel: '' }
+      : { id: id(n), parentId: id(0), kind: 'item', label: escaped(100), detail: escaped(n <= 3 ? 10000 : 0), startTime: '09:00', endTime: '09:30', date: null, blockLabel: '' });
     expect(nodes.reduce((sum, node) => sum + node.label.length + node.detail.length, 0)).toBe(contentLimits.text);
     let result = await send(`/${program.id}/content`, { version: 1, nodes });
     expect(result.status).toBe(200);

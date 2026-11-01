@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Programs } from './Programs.js';
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); history.replaceState({}, '', '/'); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); history.replaceState({}, '', '/'); });
 
 it('keeps local entries on conflict and lets the coordinator explicitly reload the saved Header', async () => {
   history.replaceState({}, '', '/programs/1');
@@ -68,6 +68,44 @@ it('shows loading, empty, and access-denied states for the Program list', async 
   rerender(<Programs/>);
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('This account cannot manage Programs. Sign out and use the configured coordinator account.'));
   expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+});
+
+it('shows progress while Program loading is slow and gives an offline retry route', async () => {
+  history.replaceState({}, '', '/');
+  vi.useFakeTimers();
+  let complete!: (value: { ok: boolean; json(): Promise<unknown> }) => void;
+  vi.stubGlobal('fetch', vi.fn(() => new Promise(resolve => { complete = resolve; })));
+  render(<Programs/>);
+  expect(screen.getByRole('status').textContent).toContain('Loading Programs');
+  await act(async () => { await vi.advanceTimersByTimeAsync(1800); });
+  expect(screen.getByRole('status').textContent).toContain('Still loading Programs');
+  expect(screen.getByText('Still loading Programs… Your saved work will appear as soon as it arrives.')).toBeDefined();
+  complete({ ok: true, json: async () => ({ programs: [] }) });
+  vi.useRealTimers();
+  await screen.findByText(/Create a Draft with a title/);
+
+  vi.stubGlobal('navigator', { onLine: false });
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+  history.replaceState({}, '', '/offline-list-check');
+  render(<Programs/>);
+  expect((await screen.findByRole('alert')).textContent).toContain('You are offline. Reconnect, then try again.');
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+});
+
+it('places Program subtitle validation beside its field and keeps the value', async () => {
+  history.replaceState({}, '', '/programs/1');
+  const program = { id: 1, title: 'Gathering', subtitle: '', date: null, startTime: null, endTime: null, status: 'Draft', version: 1 };
+  vi.stubGlobal('fetch', vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program }) })
+    .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Check the Header fields.', errors: { subtitle: 'Use a Program subtitle of up to 500 characters, or leave it blank.' } }) }));
+  render(<Programs/>);
+  await screen.findByDisplayValue('Gathering');
+  fireEvent.change(screen.getByLabelText('Subtitle (optional)'), { target: { value: 'A long subtitle' } });
+  fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
+  const subtitle = screen.getByLabelText('Subtitle (optional)');
+  expect(await screen.findByText('Use a Program subtitle of up to 500 characters, or leave it blank.')).toBeDefined();
+  expect(subtitle.getAttribute('aria-invalid')).toBe('true');
+  expect((subtitle as HTMLInputElement).value).toBe('A long subtitle');
 });
 
 it('keeps the other form\'s unsaved entries when one form reloads after a conflict', async () => {
