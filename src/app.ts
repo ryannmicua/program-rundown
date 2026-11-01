@@ -8,6 +8,7 @@ import { authRoutes } from './auth/oidc.js';
 import type { Config } from './config.js';
 import { programRoutes } from './api/programs.js';
 import { contentRoutes } from './api/content.js';
+import { publicationRoutes } from './api/publication.js';
 import { contentBodyLimit } from './domain/content.js';
 
 export async function createApp(config: Config) {
@@ -37,6 +38,7 @@ export async function createApp(config: Config) {
   };
   app.use(authRoutes(db, config, store));
   app.get('/api/session', (_req, res) => res.json({ user: res.locals.user ? { label: res.locals.user.label, coordinator: res.locals.user.coordinator } : null, feedbackEnabled: config.feedbackEnabled }));
+  app.use(publicationRoutes(db, tester));
   app.use(programRoutes(db, tester));
   app.use(contentRoutes(db, tester));
   let feedback: { close(): void } | undefined;
@@ -48,7 +50,7 @@ export async function createApp(config: Config) {
   }
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
   app.use(express.static(resolve('web/dist'), { index: false }));
-  app.get(['/', '/signin', '/programs/new', '/programs/:id'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
+  app.get(['/', '/signin', '/programs/new', '/programs/:id', '/p/:id'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
   app.use((_req, res) => res.status(404).send('Not found'));
   const errors: ErrorRequestHandler = (error, _req, res, _next) => {
     // Never log request URLs, tokens, or OIDC error bodies.

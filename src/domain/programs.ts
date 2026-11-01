@@ -1,5 +1,5 @@
 export type Header = { title: string; date: string | null; startTime: string | null; endTime: string | null };
-export type Program = Header & { id: number; status: 'Draft'; version: number };
+export type Program = Header & { id: number; status: 'Draft' | 'Published'; version: number };
 export type HeaderErrors = Partial<Record<keyof Header | 'version' | 'form', string>>;
 
 export function validateHeader(body: unknown, editing: boolean): HeaderErrors {

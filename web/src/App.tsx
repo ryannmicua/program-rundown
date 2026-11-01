@@ -1,8 +1,14 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Programs } from './programs/Programs.js';
+import { Reader } from './reader/Reader.js';
 const Feedback = lazy(() => import('./feedback/Feedback.js'));
 type Session = { user: { label: string; coordinator: boolean } | null; feedbackEnabled: boolean };
 export function App() {
+  if (window.location.pathname.startsWith('/p/')) return <Reader/>;
+  return <WorkspaceApp/>;
+}
+
+function WorkspaceApp() {
   const [session, setSession] = useState<Session>();
   const [error, setError] = useState('');
   useEffect(() => { fetch('/api/session').then(r => { if (!r.ok) throw Error(); return r.json(); }).then(setSession).catch(() => setError('Could not connect. Reload to try again.')); }, []);
@@ -19,7 +25,7 @@ export function App() {
       {error && <p role="alert">{error}</p>}
       {!session && !error && <p role="status">Connecting…</p>}
       {session && !session.user && <section className="card"><h2>Welcome to Program Rundown</h2><p>Sign in to open your workspace.</p><a id="sign-in" className="primary" href="/auth/login">Sign in</a></section>}
-      {session?.user && <><p className="eyebrow">{session.user.label}</p>{session.user.coordinator ? <Programs/> : <section className="card"><h2>Access is not configured</h2><p>This dev workspace is reserved for the configured coordinator.</p></section>}</>}
+      {session?.user && <><p className="eyebrow">{session.user.label}</p>{session.user.coordinator ? <Programs/> : <section className="card"><h2>Coordinator access is required</h2><p>This account cannot manage Programs. Sign out, then sign in with the configured coordinator account.</p></section>}</>}
       {session?.feedbackEnabled && session.user?.coordinator && <a href="/feedback">View feedback notes →</a>}
     </main>
     <footer>Program Rundown <span>Made for the moments we share.</span></footer>
