@@ -85,7 +85,8 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
   .reader-actions, footer, [data-feedback-ui] { display: none !important; }
   .reader-listing { border: 0; padding: 0; }
   .reader-header { padding-bottom: 1rem; }
-  .rundown-preview, .preview-section, .preview-section li { break-inside: avoid; page-break-inside: avoid; }
+  .preview-section li { break-inside: avoid; page-break-inside: avoid; }
+  .preview-section h4 { break-after: avoid; page-break-after: avoid; }
   a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 540px) { .edition { display: none; } header { justify-content: space-between; gap: .5rem; } main { padding: 3rem 1.2rem; } .card { padding: 1.3rem; } footer span { display: none; } }

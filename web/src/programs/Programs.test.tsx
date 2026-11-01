@@ -95,3 +95,33 @@ it('keeps the other form\'s unsaved entries when one form reloads after a confli
   expect(screen.getByText('Unsaved title')).toBeDefined();
   expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Original Gathering');
 });
+
+it('keeps Publish disabled until Header and rundown changes are saved', async () => {
+  history.replaceState({}, '', '/programs/1');
+  const program = { id: 1, title: 'Original Gathering', date: null, startTime: null, endTime: null, status: 'Draft', version: 1 };
+  const section = { id: 'opening', parentId: null, kind: 'section', label: 'Opening', detail: '', startTime: null, endTime: null };
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program, nodes: [section] }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'New title', version: 2 } }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'New title', version: 3 }, nodes: [{ ...section, label: 'Welcome' }] }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+  vi.stubGlobal('fetch', fetcher);
+  render(<Programs />);
+  await screen.findByDisplayValue('Original Gathering');
+  const publish = () => screen.getByRole('button', { name: 'Publish Program' }) as HTMLButtonElement;
+  expect(publish().disabled).toBe(false);
+  fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'New title' } });
+  fireEvent.change(screen.getByLabelText('Section heading (optional)'), { target: { value: 'Welcome' } });
+  expect(publish().disabled).toBe(true);
+  expect(screen.getByText('Save your Header and rundown changes before publishing.')).toBeDefined();
+  fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
+  await screen.findByText('Draft saved.');
+  expect(publish().disabled).toBe(true);
+  fireEvent.submit(screen.getByRole('form', { name: 'Rundown' }));
+  await screen.findByText('Rundown saved.');
+  expect(publish().disabled).toBe(false);
+  expect(screen.queryByText('Save your Header and rundown changes before publishing.')).toBeNull();
+  fireEvent.click(publish());
+  await screen.findByText('Program published. Anyone with the link can read and print it.');
+  expect(JSON.parse(fetcher.mock.calls[2][1].body)).toMatchObject({ version: 2 });
+});

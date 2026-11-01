@@ -3,8 +3,8 @@ import { contentLimits, moveSibling, type ContentNode } from '../../../src/domai
 import type { Program } from '../../../src/domain/programs.js';
 import { Rundown } from './Rundown.js';
 
-export function ContentEditor({ program, initialNodes, onSaved, reload }: {
-  program: Program; initialNodes: ContentNode[]; onSaved(program: Program): void; reload(): Promise<void>;
+export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, reload }: {
+  program: Program; initialNodes: ContentNode[]; onSaved(program: Program): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
 }) {
   const [nodes, setNodes] = useState(initialNodes);
   const [kept, setKept] = useState<ContentNode[]>();
@@ -13,6 +13,7 @@ export function ContentEditor({ program, initialNodes, onSaved, reload }: {
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  useEffect(() => { onDirtyChange(dirty); }, [dirty]);
   useEffect(() => { if (dirty) setKept(nodes); setNodes(initialNodes); setConflict(false); setError(''); setMessage(''); setDirty(false); }, [initialNodes]);
 
   function change(next: ContentNode[]) { setNodes(next); setDirty(true); setMessage(''); }

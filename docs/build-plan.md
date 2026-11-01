@@ -504,6 +504,7 @@ The captain settled Q1–Q3, Q5, and T1–T2; Q4 delegates the list design to th
 | Q3 | An occupied destination keeps all existing Parts and receives the moved Part in parallel. The coordinator decides whether to move another Part. | U6 representation, U9 |
 | Q4 | Use Named Participants grouped by definition, Text assignments per Part, and Awaiting a name for unnamed roles. Retain source locations and offer the same list for standalone Programs. | U11 |
 | Q5 | Share Participant definitions between Programs. Moving or fully copying a reference keeps its identity; offer copying without Participant or copying everything. | U7, U9, U11 |
+| Q6 | Published reader links use the Program's sequential id (`/p/<n>`); no unguessable token, since published programs need no link protection (captain, 2026-11-01). | U4 |
 | T1 | Any coordinator can save a managed Program as a template owned by their account and usable across all their Events. Sharing makes the template visible to other coordinators, who must copy/import it as an independent template in their own account, never link to it. Sharing grants no rights to the source Program. | U12, U13 |
 | T2 | A new Program copies Parts in order with their extra info, but no Participant assignments. Header dates/times do not carry over; the new Program takes its own title and optional date. | U12 creation preview and carry-over; U13 imports |
 

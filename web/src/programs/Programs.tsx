@@ -28,10 +28,14 @@ export function Programs() {
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const [publishError, setPublishError] = useState('');
+  const [publishing, setPublishing] = useState(false);
+  const [rundownDirty, setRundownDirty] = useState(false);
+  const headerDirty = Boolean(saved && (['title', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key]));
+  const unsaved = headerDirty || rundownDirty;
 
   async function publish() {
-    if (!saved) return;
-    setBusy(true); setPublishError('');
+    if (!saved || unsaved) return;
+    setPublishing(true); setPublishError('');
     try {
       const response = await fetch(`/api/programs/${saved.id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
       const data = await response.json();
@@ -41,10 +45,10 @@ export function Programs() {
             : data.error || 'Could not publish. Try again.');
         return;
       }
-      setSaved({ ...saved, status: 'Published' });
+      setSaved(current => current && { ...current, status: 'Published' });
       setMessage('Program published. Anyone with the link can read and print it.');
     } catch { setPublishError('Could not connect. Your Program is unchanged. Try again.'); }
-    finally { setBusy(false); }
+    finally { setPublishing(false); }
   }
 
   async function load() {
@@ -59,7 +63,7 @@ export function Programs() {
         return;
       }
       if (id) {
-        if (saved && (['title', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key])) setKept({ ...header });
+        if (headerDirty) setKept({ ...header });
         setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []);
       } else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
@@ -107,8 +111,8 @@ export function Programs() {
       {saved && <HeaderSummary header={saved}/>}
       {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{!creating && (!saved || conflict) && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
       {message && <p role="status">{message}</p>}
-      {publishError && <p role="alert">{publishError} <button type="button" disabled={busy} onClick={() => void publish()}>Try again</button></p>}
-      {saved?.status === 'Draft' && <div className="publish-actions"><button type="button" disabled={busy} onClick={() => void publish()}>{busy ? 'Publishing…' : 'Publish Program'}</button><p>Publishing makes the current Program readable by anyone with its link.</p></div>}
+      {publishError && <p role="alert">{publishError} <button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>Try again</button></p>}
+      {saved?.status === 'Draft' && <div className="publish-actions"><button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>{publishing ? 'Publishing…' : 'Publish Program'}</button>{unsaved && <p>Save your Header and rundown changes before publishing.</p>}<p>Publishing makes the current Program readable by anyone with its link.</p></div>}
       {saved?.status === 'Published' && <p className="share-link">Reader link: <a href={`/p/${saved.id}`}>{window.location.origin}/p/{saved.id}</a></p>}
       {!creating && !saved && !error && <p role="status">Loading Draft…</p>}
       {kept && <aside className="kept-header"><h3>Your unsaved entries</h3><p>{kept.title}</p><HeaderSummary header={kept}/>{!conflict && <button type="button" onClick={() => { setHeader(kept); setMessage('Review your entries, then save against the latest Draft.'); }}>Reapply my entries</button>}</aside>}
@@ -122,9 +126,9 @@ export function Programs() {
           </div>)}
         </div>
         {errors.form && <p>{errors.form}</p>}{errors.version && <p>{errors.version}</p>}
-        <button className="primary" type="submit" disabled={busy || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
+        <button className="primary" type="submit" disabled={busy || publishing || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
       </form>}
     </section>
-    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={setSaved} reload={load}/>}
+    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={setSaved} onDirtyChange={setRundownDirty} reload={load}/>}
   </>;
 }
