@@ -86,5 +86,27 @@ test('coordinator publishes a Program that readers can share and print on narrow
       await emptyReader.goto(`${app.origin}/p/${emptyProgram.id}`);
       await expect(emptyReader.getByText('No rundown details have been added yet.')).toBeVisible();
     } finally { await emptyReader.close(); }
+    const longTitle = await page.request.post(`${app.origin}/api/programs`, { headers: { origin: app.origin }, data: { title: 'Harvest Thanksgiving Service' } });
+    const { program: longTitleProgram } = await longTitle.json();
+    expect((await page.request.post(`${app.origin}/api/programs/${longTitleProgram.id}/publish`, { headers: { origin: app.origin }, data: {} })).status()).toBe(200);
+    const phoneReader = await page.context().newPage();
+    try {
+      await phoneReader.setViewportSize({ width: 375, height: 800 });
+      await phoneReader.goto(`${app.origin}/p/${longTitleProgram.id}`);
+      const title = phoneReader.getByRole('heading', { name: 'Harvest Thanksgiving Service' });
+      await expect(title).toBeVisible();
+      const splitWords = await title.evaluate(element => {
+        const text = element.firstChild!;
+        const split: string[] = [];
+        for (const match of text.textContent!.matchAll(/\S+/g)) {
+          const range = document.createRange();
+          range.setStart(text, match.index!);
+          range.setEnd(text, match.index! + match[0].length);
+          if (new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size > 1) split.push(match[0]);
+        }
+        return split;
+      });
+      expect(splitWords).toEqual([]);
+    } finally { await phoneReader.close(); }
   } finally { await app.close(); }
 });
