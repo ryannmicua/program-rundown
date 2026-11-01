@@ -113,3 +113,14 @@ it('shows a reference Part as a saved Participant, clears the definition when sw
   const put = fetcher.mock.calls.find(([input]) => input !== '/api/participants') as unknown as [string, RequestInit];
   expect(JSON.parse(String(put[1].body)).parts[0]).toMatchObject({ kind: 'text', value: 'Choir', participantId: null, referenceMode: null });
 });
+
+it('keeps a linked reference visible while saved Participants cannot load', async () => {
+  vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify({ error: 'down' }), { status: 500 }))));
+  const details = { role: 'Speaker', name: 'Alex Placeholder', honorific: 'Dr.', position: '', organization: '', subtitle: '' };
+  render(editor({ initialParts: [{ ...leader, kind: 'reference', role: '', participantId: 7, referenceMode: 'name', participant: details }], initialFooter: [] }));
+  await screen.findByRole('button', { name: 'Try loading Participants again' });
+  const song = screen.getByRole('region', { name: 'Participants for Opening Song' });
+  expect((within(song).getByLabelText('Participant definition') as HTMLSelectElement).value).toBe('7');
+  expect(within(song).getByRole('option', { name: 'Speaker — Dr. Alex Placeholder' })).toBeDefined();
+  expect(within(song).queryByText(/No saved Participants match/)).toBeNull();
+});
