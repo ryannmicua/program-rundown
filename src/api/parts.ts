@@ -25,9 +25,9 @@ export function partsRoutes(db: DatabaseSync, coordinator: RequestHandler) {
     const error = validateParts(req.body, nodes);
     if (error) return res.status(400).json({ error });
     const participantIds = (req.body.parts as DirectPart[]).filter(part => part.kind === 'reference').map(part => part.participantId);
-    if (participantIds.some(id => !db.prepare('SELECT 1 FROM participants WHERE id = ? AND owner_id = ?').get(Number(id), res.locals.user.id))) return res.status(400).json({ error: 'Choose a Participant you can manage.' });
     db.exec('BEGIN IMMEDIATE');
     try {
+      if (participantIds.some(id => !db.prepare('SELECT 1 FROM participants WHERE id = ? AND owner_id = ?').get(Number(id), res.locals.user.id))) { db.exec('ROLLBACK'); return res.status(400).json({ error: 'Choose a Participant you can manage.' }); }
       const result = db.prepare('UPDATE programs SET version = version + 1 WHERE id = ? AND owner_id = ? AND version = ?').run(program.id, res.locals.user.id, req.body.version);
       if (!result.changes) { db.exec('ROLLBACK'); return res.status(409).json({ error: 'This Program changed. Your Parts are kept. Reload the saved Program, then review and reapply them.' }); }
       db.prepare('DELETE FROM parts WHERE program_id = ?').run(program.id);

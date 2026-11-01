@@ -37,5 +37,6 @@ export const participantsMigration = {
     CREATE INDEX parts_target ON parts(program_id, target_kind, target_id, position);
     CREATE INDEX participants_owner ON participants(owner_id, role, name);
     CREATE INDEX parts_participant ON parts(participant_id);
+    CREATE TABLE demo_participant_seeds (program_id INTEGER PRIMARY KEY REFERENCES programs(id) ON DELETE CASCADE);
   `,
 };

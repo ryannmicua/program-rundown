@@ -77,9 +77,16 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
       // Retarget only demo ownership if the operator replaces the mapped synthetic identity.
       seedProduct({ ...env, DEV_COORDINATOR_SUBJECT: 'replacement-placeholder' });
       const replacement = db.prepare('SELECT id FROM identities WHERE subject = ?').get('replacement-placeholder') as { id: number };
-      expect(db.prepare("SELECT owner_id, title, version FROM programs WHERE seed_key = 'standalone-community-gathering'").get()).toEqual({ owner_id: replacement.id, title: 'Edited Gathering', version: 3 });
+      expect(db.prepare("SELECT owner_id, title, version FROM programs WHERE seed_key = 'standalone-community-gathering'").get()).toEqual({ owner_id: replacement.id, title: 'Edited Gathering', version: 4 });
       expect(db.prepare("SELECT owner_id FROM participants WHERE seed_key = 'demo-speaker'").get()).toEqual({ owner_id: replacement.id });
       expect(db.prepare('SELECT owner_id FROM programs WHERE seed_key IS NULL').get()).toEqual({ owner_id: owner.owner_id });
+      db.prepare("DELETE FROM parts WHERE id IN ('demo-welcome-speaker', 'demo-introit-leader')").run();
+      db.prepare("DELETE FROM participants WHERE seed_key = 'demo-reader'").run();
+      const removed = db.prepare('SELECT id, version FROM programs ORDER BY id').all();
+      seedProduct(env);
+      expect(db.prepare("SELECT id FROM parts WHERE id IN ('demo-welcome-speaker', 'demo-introit-leader')").all()).toEqual([]);
+      expect(db.prepare("SELECT seed_key FROM participants ORDER BY seed_key").all()).toEqual([{ seed_key: 'demo-pianist-participant' }, { seed_key: 'demo-speaker' }]);
+      expect(db.prepare('SELECT id, version FROM programs ORDER BY id').all()).toEqual(removed);
       db.prepare('DELETE FROM content_nodes').run();
       seedProduct(env);
       expect(db.prepare('SELECT * FROM content_nodes').all()).toEqual([]);
