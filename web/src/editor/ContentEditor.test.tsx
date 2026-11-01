@@ -4,7 +4,7 @@ import { ContentEditor } from './ContentEditor.js';
 import type { ContentNode } from '../../../src/domain/content.js';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-const program = { id: 1, title: 'Gathering', date: null, startTime: null, endTime: null, status: 'Draft' as const, version: 1 };
+const program = { id: 1, title: 'Gathering', subtitle: '', date: null, startTime: null, endTime: null, status: 'Draft' as const, version: 1 };
 const section: ContentNode = { id: 'opening', parentId: null, kind: 'section', label: 'Opening', detail: '', startTime: '09:00', endTime: null };
 const item: ContentNode = { id: 'prayer', parentId: 'opening', kind: 'item', label: '*Introit', detail: '<script>example</script>\nSecond line', startTime: null, endTime: '09:10' };
 
@@ -34,7 +34,7 @@ it('keeps entries on a network error and allows retry', async () => {
 
 it('announces the empty editor and keeps move controls disabled at sibling boundaries', () => {
   const { rerender } = render(<ContentEditor program={program} initialNodes={[]} onSaved={vi.fn()} onDirtyChange={vi.fn()} reload={vi.fn()}/>);
-  expect(screen.getByText('No Sections yet. Add a Section to start your rundown.')).toBeDefined();
+  expect(screen.getByText('No Sections yet. Add a Section or mini-program to start your rundown.')).toBeDefined();
   expect(screen.getByRole('region', { name: 'Rundown preview' })).toBeDefined();
   rerender(<ContentEditor program={program} initialNodes={[section, item]} onSaved={vi.fn()} onDirtyChange={vi.fn()} reload={vi.fn()}/>);
   expect(screen.getByRole('button', { name: 'Move Opening up' })).toHaveProperty('disabled', true);
@@ -82,4 +82,14 @@ it('preserves conflict entries, reloads explicitly, and reapplies against the cu
   fireEvent.submit(screen.getByRole('form', { name: 'Rundown' }));
   await screen.findByText('Rundown saved.');
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({ version: 2, nodes: [section, { ...item, label: 'Kept prayer' }] });
+});
+
+it('numbers nested Sections among Section siblings and names untitled mini-program parents by kind', () => {
+  const mini: ContentNode = { id: 'mini', parentId: 'opening', kind: 'mini-program', label: '', detail: '', startTime: null, endTime: null };
+  const nested: ContentNode = { id: 'nested', parentId: 'mini', kind: 'section', label: '', detail: '', startTime: null, endTime: null };
+  render(<ContentEditor program={program} initialNodes={[section, item, mini, nested, { ...nested, id: 'inner', parentId: 'opening' }]} onSaved={vi.fn()} onDirtyChange={vi.fn()} reload={vi.fn()}/>);
+  expect(screen.getByRole('region', { name: 'Mini-program: Untitled mini-program' })).toBeDefined();
+  expect(screen.getByRole('region', { name: 'Section 1 in Untitled mini-program: Unheaded' })).toBeDefined();
+  expect(screen.getByRole('region', { name: 'Section 1 in Opening: Unheaded' })).toBeDefined();
+  expect(screen.getByRole('button', { name: 'Move Untitled mini-program up' })).toBeDefined();
 });

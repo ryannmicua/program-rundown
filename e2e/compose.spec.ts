@@ -13,7 +13,7 @@ test('composes and reorders Sections and Items with pointer and keyboard control
     await page.getByRole('button', { name: 'Save Draft', exact: true }).click();
     const editor = page.getByRole('region', { name: 'Rundown editor' });
     await expect(editor.getByText('No Sections yet.', { exact: false })).toBeVisible();
-    await editor.getByRole('button', { name: 'Add Section', exact: true }).click();
+    await editor.getByRole('button', { name: 'Add top-level Section', exact: true }).click();
     let opening = editor.getByRole('region', { name: 'Section 1: Unheaded', exact: true });
     await opening.getByLabel('Section heading (optional)').fill('Call to Worship');
     opening = editor.getByRole('region', { name: 'Section 1: Call to Worship', exact: true });
@@ -29,11 +29,11 @@ test('composes and reorders Sections and Items with pointer and keyboard control
     await opening.getByRole('button', { name: 'Move Prayer up', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(opening.getByLabel('Item label').first()).toHaveValue('Prayer');
-    await editor.getByRole('button', { name: 'Add Section', exact: true }).click();
+    await editor.getByRole('button', { name: 'Add top-level Section', exact: true }).click();
     let closing = editor.getByRole('region', { name: 'Section 2: Unheaded', exact: true });
     await closing.getByRole('button', { name: 'Add Item', exact: true }).click();
     await closing.getByLabel('Item label').fill('Closing Remarks');
-    await editor.getByRole('button', { name: 'Move unheaded Section up', exact: true }).click();
+    await editor.getByRole('button', { name: 'Move Unheaded Section up', exact: true }).click();
     await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();
     await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
     await page.reload();
@@ -56,7 +56,7 @@ test('composes and reorders Sections and Items with pointer and keyboard control
     await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
     await page.reload();
     await expect(editor.getByRole('region', { name: 'Section 1: Unheaded', exact: true }).getByLabel('Item label')).toHaveCount(0);
-    await editor.getByRole('region', { name: 'Section 2: Call to Worship', exact: true }).getByRole('button', { name: 'Remove Section and its Items', exact: true }).click();
+    await editor.getByRole('region', { name: 'Section 2: Call to Worship', exact: true }).getByRole('button', { name: 'Remove Section and its contents', exact: true }).click();
     await editor.getByRole('button', { name: 'Save rundown', exact: true }).click();
     await expect(editor.getByRole('status')).toHaveText('Rundown saved.');
     await page.reload();

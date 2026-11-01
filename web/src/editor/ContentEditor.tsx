@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { contentLimits, moveSibling, type ContentNode } from '../../../src/domain/content.js';
 import type { Program } from '../../../src/domain/programs.js';
-import { Rundown } from './Rundown.js';
+import { ProgramRenderer } from '../programs/ProgramRenderer.js';
 
 export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, reload }: {
   program: Program; initialNodes: ContentNode[]; onSaved(program: Program): void; onDirtyChange(dirty: boolean): void; reload(): Promise<void>;
@@ -18,10 +18,10 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
 
   function change(next: ContentNode[]) { setNodes(next); setDirty(true); setMessage(''); }
   function add(kind: ContentNode['kind'], parentId: string | null) {
-    change([...nodes, { id: crypto.randomUUID(), parentId, kind, label: '', detail: '', startTime: null, endTime: null }]);
+    change([...nodes, { id: crypto.randomUUID(), parentId, kind, label: '', detail: '', startTime: null, endTime: null, date: null, blockLabel: '' }]);
   }
   function edit(id: string, fields: Partial<ContentNode>) { change(nodes.map(node => node.id === id ? { ...node, ...fields } : node)); }
-  function remove(id: string) { change(nodes.filter(node => node.id !== id && node.parentId !== id)); }
+  function remove(id: string) { const removed = new Set([id]); let changed = true; while (changed) { changed = false; for (const node of nodes) if (node.parentId && removed.has(node.parentId) && !removed.has(node.id)) { removed.add(node.id); changed = true; } } change(nodes.filter(node => !removed.has(node.id))); }
   async function save() {
     setBusy(true); setError(''); setMessage('');
     try {
@@ -35,51 +35,60 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
         return;
       }
       onSaved(data.program); onDirtyChange(false); setNodes(data.nodes); setKept(undefined); setDirty(false); setMessage('Rundown saved.');
-    } catch { setError('Could not connect. Your rundown entries are kept. Try again.'); }
+    } catch { setError(window.navigator.onLine ? 'Could not connect. Your rundown entries are kept. Try again.' : 'You are offline. Your rundown entries are kept. Reconnect, then try again.'); }
     finally { setBusy(false); }
+  }
+  function displayName(node: ContentNode) {
+    return node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'mini-program' ? 'Untitled mini-program' : 'New Item');
   }
   function controls(node: ContentNode) {
     const siblings = nodes.filter(other => other.parentId === node.parentId);
     const position = siblings.findIndex(other => other.id === node.id);
-    const name = node.label || 'unheaded Section';
+    const name = displayName(node);
     return <div className="node-actions">
       <button type="button" disabled={position === 0 || busy || conflict} aria-label={`Move ${name} up`} onClick={() => { change(moveSibling(nodes, node.id, -1)); setMessage(`${name} moved up. Save rundown to keep this order.`); }}>↑ Move up</button>
       <button type="button" disabled={position === siblings.length - 1 || busy || conflict} aria-label={`Move ${name} down`} onClick={() => { change(moveSibling(nodes, node.id, 1)); setMessage(`${name} moved down. Save rundown to keep this order.`); }}>↓ Move down</button>
-      <button type="button" disabled={busy || conflict} onClick={() => remove(node.id)}>Remove {node.kind === 'section' ? 'Section and its Items' : 'Item'}</button>
+      <button type="button" disabled={busy || conflict} onClick={() => remove(node.id)}>Remove {node.kind === 'section' ? 'Section and its contents' : node.kind === 'mini-program' ? 'mini-program and its contents' : 'Item'}</button>
     </div>;
   }
   function fields(node: ContentNode) {
     return <div className="header-fields">
-      <div className="title-field"><label htmlFor={`${node.id}-label`}>{node.kind === 'section' ? 'Section heading (optional)' : 'Item label'}</label>
-        <input id={`${node.id}-label`} maxLength={contentLimits.label} required={node.kind === 'item'} value={node.label} onChange={event => edit(node.id, { label: event.target.value })}/></div>
+      <div className="title-field"><label htmlFor={`${node.id}-label`}>{node.kind === 'section' ? 'Section heading (optional)' : node.kind === 'mini-program' ? 'Mini-program title' : 'Item label'}</label>
+        <input id={`${node.id}-label`} maxLength={contentLimits.label} required={node.kind !== 'section'} value={node.label} onChange={event => edit(node.id, { label: event.target.value })}/></div>
+      {node.kind !== 'item' && <div><label htmlFor={`${node.id}-blockLabel`}>Block label (optional)</label><input id={`${node.id}-blockLabel`} maxLength={contentLimits.blockLabel} value={node.blockLabel || ''} onChange={event => edit(node.id, { blockLabel: event.target.value })}/></div>}
+      {node.kind === 'mini-program' && <div><label htmlFor={`${node.id}-date`}>Mini-program date (optional)</label><input id={`${node.id}-date`} type="date" value={node.date || ''} onChange={event => edit(node.id, { date: event.target.value || null })}/></div>}
       {node.kind === 'item' && <div className="title-field"><label htmlFor={`${node.id}-detail`}>Detail (optional)</label><textarea id={`${node.id}-detail`} maxLength={contentLimits.detail} value={node.detail} onChange={event => edit(node.id, { detail: event.target.value })}/></div>}
       {(['startTime', 'endTime'] as const).map(key => <div key={key}><label htmlFor={`${node.id}-${key}`}>{key === 'startTime' ? 'Start time' : 'End time'} (optional)</label><input id={`${node.id}-${key}`} type="time" value={node[key] || ''} onChange={event => edit(node.id, { [key]: event.target.value || null })}/></div>)}
     </div>;
   }
-  const sections = nodes.filter(node => node.kind === 'section');
+  function renderNode(node: ContentNode, parent?: ContentNode) {
+    if (node.kind === 'item') return <li key={node.id}><div className="content-item" role="group" aria-label={`Item: ${displayName(node)}`}><h4>{displayName(node)}</h4>{fields(node)}{controls(node)}</div></li>;
+    const children = nodes.filter(child => child.parentId === node.id);
+    const number = nodes.filter(other => other.parentId === node.parentId && other.kind === 'section').indexOf(node) + 1;
+    const title = node.kind === 'section' ? `Section ${number}${parent ? ` in ${displayName(parent)}` : ''}: ${node.label || 'Unheaded'}` : `Mini-program: ${displayName(node)}`;
+    return <li key={node.id}><section className="content-section" aria-label={title}><h3>{displayName(node)}</h3>{fields(node)}{controls(node)}
+      <ol className="content-items">{children.map(child => renderNode(child, node))}</ol>
+      {node.kind === 'section' && <button type="button" onClick={() => add('item', node.id)}>Add Item</button>}
+      <button type="button" onClick={() => add('section', node.id)}>Add Section</button><button type="button" onClick={() => add('mini-program', node.id)}>Add mini-program</button>
+    </section></li>;
+  }
+  const roots = nodes.filter(node => node.parentId === null);
   return <section className="card rundown-editor" aria-label="Rundown editor">
     <h2>Rundown</h2>
-    <p>Sections group Items, even without a heading. Move buttons work with a pointer or keyboard. Save to keep your changes.</p>
+    <p>Sections and mini-programs can nest. Sections group Items, even without a heading. Move buttons work with a pointer or keyboard. Save to keep your changes.</p>
     {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{conflict && <button type="button" disabled={busy} onClick={() => void reload()}>Reload saved rundown</button>}</div>}
     {message && <p role="status">{message}</p>}
-    {kept && <aside className="kept-header"><h3>Your unsaved rundown</h3><pre className="note-text">{kept.map(node => `${node.kind === 'section' ? 'Section: ' : 'Item: '}${node.label || '(unheaded)'}${node.detail ? `\n${node.detail}` : ''}${node.startTime ? `\nStart: ${node.startTime}` : ''}${node.endTime ? `\nEnd: ${node.endTime}` : ''}`).join('\n\n')}</pre>{!conflict && <button type="button" onClick={() => change(kept)}>Reapply my rundown entries</button>}</aside>}
+    {kept && <aside className="kept-header"><h3>Your unsaved rundown</h3><pre className="note-text">{kept.map(node => `${node.kind === 'section' ? 'Section: ' : node.kind === 'mini-program' ? 'Mini-program: ' : 'Item: '}${node.label || '(unheaded)'}${node.date ? `\nDate: ${node.date}` : ''}${node.detail ? `\n${node.detail}` : ''}${node.startTime ? `\nStart: ${node.startTime}` : ''}${node.endTime ? `\nEnd: ${node.endTime}` : ''}`).join('\n\n')}</pre>{!conflict && <button type="button" onClick={() => change(kept)}>Reapply my rundown entries</button>}</aside>}
     <form aria-label="Rundown" onSubmit={event => { event.preventDefault(); void save(); }}>
       <fieldset disabled={busy || conflict}>
         <legend className="sr-only">Sections and Items</legend>
-        {!sections.length && <p>No Sections yet. Add a Section to start your rundown.</p>}
-        <ol className="content-sections">{sections.map((section, index) => <li key={section.id}>
-          <section className="content-section" aria-label={`Section ${index + 1}: ${section.label || 'Unheaded'}`}>
-            <h3>{section.label || 'Unheaded Section'}</h3>
-            {fields(section)}{controls(section)}
-            <ol className="content-items">{nodes.filter(node => node.parentId === section.id).map(item => <li key={item.id}><div className="content-item" role="group" aria-label={`Item: ${item.label || 'New Item'}`}><h4>{item.label || 'New Item'}</h4>{fields(item)}{controls(item)}</div></li>)}</ol>
-            <button type="button" onClick={() => add('item', section.id)}>Add Item</button>
-          </section>
-        </li>)}</ol>
-        <button type="button" onClick={() => add('section', null)}>Add Section</button>
+        {!roots.length && <p>No Sections yet. Add a Section or mini-program to start your rundown.</p>}
+        <ol className="content-sections">{roots.map(node => renderNode(node))}</ol>
+        <button type="button" onClick={() => add('section', null)}>Add top-level Section</button><button type="button" onClick={() => add('mini-program', null)}>Add top-level mini-program</button>
         <button className="primary save-rundown" type="submit" disabled={!dirty || busy || conflict}>{busy ? 'Saving rundown…' : 'Save rundown'}</button>
         {dirty && <p>Unsaved rundown changes.</p>}
       </fieldset>
     </form>
-    <Rundown nodes={nodes}/>
+    <ProgramRenderer program={program} nodes={nodes} showHeading/>
   </section>;
 }

@@ -40,7 +40,8 @@ The seed requires `APP_ENV=dev`, `DEV_COORDINATOR_ISSUER`, and `DEV_COORDINATOR_
 It creates the standalone `Community Gathering` Draft Header, with no date, a 09:00 start, and a 12:00 end.
 It adds ordered Sections and Items, including an unheaded closing Section, literal `*Introit`, multiline Detail, and independent optional times.
 It also creates `Example Published Program`, already published, so its `/p/<id>` reader link works without signing in.
-There are no Events or Participants yet. Nested groups and mini-programs arrive in U5.
+That Program has the subtitle `A day of gratitude` and a nested rundown: a `featured` Section containing the `Morning Service` mini-program (with a `Dedication` Section) and a `Closing Program` mini-program with an unheaded labelled Section.
+There are no Events or Participants yet.
 The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers and rundown content, including deliberate removal of all content, plus unrelated Programs, sessions, identity mappings, and feedback.
 If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs only.
