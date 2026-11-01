@@ -15,11 +15,31 @@ function snapshotProgram(db: DatabaseSync, programId: number): Snapshot {
 export function templateRoutes(db: DatabaseSync, coordinator: RequestHandler) {
   const router = Router();
   router.use('/api/templates', coordinator);
-  router.get('/api/templates', (_req, res) => res.json({ templates: db.prepare('SELECT id, name FROM program_templates WHERE owner_id = ? ORDER BY id DESC').all(res.locals.user.id) }));
+  router.get('/api/templates', (_req, res) => res.json({ templates: db.prepare('SELECT id, name, shared FROM program_templates WHERE owner_id = ? ORDER BY id DESC').all(res.locals.user.id), sharedTemplates: db.prepare('SELECT id, name FROM program_templates WHERE shared = 1 AND owner_id != ? ORDER BY name, id').all(res.locals.user.id) }));
+  router.get('/api/templates/shared/:id', (req, res) => {
+    const id = Number(req.params.id), template = Number.isSafeInteger(id) && id > 0 ? db.prepare('SELECT id, name, snapshot FROM program_templates WHERE id = ? AND shared = 1 AND owner_id != ?').get(id, res.locals.user.id) as { id: number; name: string; snapshot: string } | undefined : undefined;
+    if (!template) return res.status(404).json({ error: 'Shared template not found. It may be private or no longer shared.' });
+    return res.json({ template: { id: template.id, name: template.name }, ...JSON.parse(template.snapshot) as Snapshot });
+  });
   router.get('/api/templates/:id', (req, res) => {
-    const id = Number(req.params.id), template = Number.isSafeInteger(id) && id > 0 ? db.prepare('SELECT id, name, snapshot FROM program_templates WHERE id = ? AND owner_id = ?').get(id, res.locals.user.id) as { id: number; name: string; snapshot: string } | undefined : undefined;
+    const id = Number(req.params.id), template = Number.isSafeInteger(id) && id > 0 ? db.prepare('SELECT id, name, snapshot, shared FROM program_templates WHERE id = ? AND owner_id = ?').get(id, res.locals.user.id) as { id: number; name: string; snapshot: string; shared: number } | undefined : undefined;
     if (!template) return res.status(404).json({ error: 'Template not found. It may belong to another coordinator.' });
     return res.json({ template: { id: template.id, name: template.name }, ...JSON.parse(template.snapshot) as Snapshot });
+  });
+  router.patch('/api/templates/:id/sharing', (req, res) => {
+    const id = Number(req.params.id), owner = Number(res.locals.user.id);
+    if (!req.body || Object.keys(req.body).some(key => key !== 'shared') || typeof req.body.shared !== 'boolean') return res.status(400).json({ error: 'Choose whether to share this template.' });
+    const result = db.prepare('UPDATE program_templates SET shared = ? WHERE id = ? AND owner_id = ?').run(req.body.shared ? 1 : 0, id, owner);
+    if (!result.changes) return res.status(404).json({ error: 'Template not found. It may belong to another coordinator.' });
+    return res.json({ shared: req.body.shared });
+  });
+  router.post('/api/templates/shared/:id/import', (req, res) => {
+    const id = Number(req.params.id), recipient = Number(res.locals.user.id);
+    if (!Number.isSafeInteger(id) || id < 1) return res.status(404).json({ error: 'Shared template not found.' });
+    const source = db.prepare('SELECT name, snapshot FROM program_templates WHERE id = ? AND shared = 1 AND owner_id != ?').get(id, recipient) as { name: string; snapshot: string } | undefined;
+    if (!source) return res.status(404).json({ error: 'Shared template not found. It may be private or no longer shared.' });
+    const result = db.prepare('INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, ?, ?)').run(recipient, source.name, source.snapshot);
+    return res.status(201).json({ template: { id: Number(result.lastInsertRowid), name: source.name } });
   });
   router.post('/api/templates', (req, res) => {
     if (!req.body || Object.keys(req.body).some(key => !['name', 'programId'].includes(key)) || typeof req.body.name !== 'string' || !req.body.name.trim() || req.body.name.trim().length > 200 || !Number.isSafeInteger(req.body.programId) || req.body.programId < 1) return res.status(400).json({ error: 'Enter a template name and choose a Program.' });

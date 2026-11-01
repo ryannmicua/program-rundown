@@ -133,11 +133,19 @@ People are not copied: direct names and Participant references are cleared, keep
 Header dates and times, including mini-program dates and times, are not copied, and the Draft never inherits publication status.
 Later edits to the source Program, the template, or a created Draft do not change the others.
 
+Choose **Share template** to let other coordinators see a template, or **Stop sharing** to make it private again; only its owner can change this.
+Sharing exposes the template snapshot only, never the source Program or its Event.
+Under **Shared templates**, choose **Preview shared template** or **Import a copy**.
+Importing creates an independent template in your account and opens it to create a Draft; you must import a shared template before creating a Draft from it.
+
 | Endpoint | Behavior |
 | --- | --- |
-| `GET /api/templates` | List the signed-in coordinator's own templates. |
+| `GET /api/templates` | List the signed-in coordinator's own `templates` with their `shared` state, and other coordinators' `sharedTemplates`. |
 | `POST /api/templates` | Save a template with `name` and the `programId` of a Program you manage. |
 | `GET /api/templates/:id` | Read an owned template's `nodes`, `parts`, and `footer` snapshot; other accounts' templates return 404. |
+| `PATCH /api/templates/:id/sharing` | Set an owned template's `shared` boolean; other accounts' templates return 404. |
+| `GET /api/templates/shared/:id` | Preview another coordinator's shared template snapshot; private or own templates return 404. |
+| `POST /api/templates/shared/:id/import` | Copy another coordinator's shared template into your account as a new, independent template. |
 | `POST /api/templates/:id/programs` | Create a Draft from an owned template with `title` and optional `date` and `eventId`. |
 
 ## Move or copy a Part

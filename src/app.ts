@@ -58,7 +58,7 @@ export async function createApp(config: Config) {
   }
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
   app.use(express.static(resolve('web/dist'), { index: false }));
-  app.get(['/', '/signin', '/programs/new', '/programs/:id', '/events', '/events/:id', '/templates', '/templates/:id/use', '/e/:id', '/e/:id/p/:programId', '/p/:id'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
+  app.get(['/', '/signin', '/programs/new', '/programs/:id', '/events', '/events/:id', '/templates', '/templates/:id/use', '/templates/shared/:id/preview', '/e/:id', '/e/:id/p/:programId', '/p/:id'], (_req, res) => res.sendFile('index.html', { root: resolve('web/dist') }));
   app.use((_req, res) => res.status(404).send('Not found'));
   const errors: ErrorRequestHandler = (error, _req, res, _next) => {
     // Never log request URLs, tokens, or OIDC error bodies.

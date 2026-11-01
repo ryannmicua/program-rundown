@@ -553,8 +553,7 @@ The new Program has its own coordinator access and optional Event link; it never
 Changes to the source Program, template, or new Program do not update the other records or other Programs created from the template.
 A template is not a published Program, a mini-program, a recurrence rule, or a copy-forward operation on last week's Programs.
 
-The first slice covers saving an owned template and creating a Program from it (U12).
-Sharing and importing independent copies follow in U13; T1–T2 are settled below.
+U12 covers saving an owned template and creating a Program from it; U13 covers sharing and importing independent copies. T1–T2 are settled below.
 
 ### Role
 
