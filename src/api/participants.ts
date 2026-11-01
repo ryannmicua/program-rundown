@@ -43,13 +43,13 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
       p.participant_id AS participantId, p.reference_mode AS referenceMode, d.role AS participantRole, d.name AS participantName,
       d.honorific, d.position, d.organization, d.subtitle, pr.event_position AS eventPosition,
       CASE WHEN p.target_kind='footer' THEN printf('~%08d',f.position) ELSE t.sort_path END AS targetOrder, p.position AS partPosition
-    FROM parts p JOIN programs pr ON pr.id=p.program_id LEFT JOIN tree t ON t.program_id=p.program_id AND t.id=p.target_id
-    LEFT JOIN footer_roles f ON f.program_id=p.program_id AND f.id=p.target_id LEFT JOIN participants d ON d.id=p.participant_id
+    FROM parts p JOIN programs pr ON pr.id=p.program_id LEFT JOIN tree t ON t.program_id=p.program_id AND t.id=p.target_id AND p.target_kind!='footer'
+    LEFT JOIN footer_roles f ON f.program_id=p.program_id AND f.id=p.target_id AND p.target_kind='footer' LEFT JOIN participants d ON d.id=p.participant_id
     WHERE p.program_id IN (${sqlIds})
     ORDER BY COALESCE(pr.event_position,0), targetOrder, partPosition`).all(...ids, ...ids) as unknown as ParticipantAssignment[];
     return buildParticipantList(rows);
   }
-  router.get('/api/events/:id/participants', (req, res) => {
+  router.get('/api/events/:id/participants', coordinator, (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isSafeInteger(eventId) || eventId < 1) return res.status(404).json({ error: 'Event not found.' });
     const event = db.prepare('SELECT id FROM events WHERE id = ? AND owner_id = ?').get(eventId, res.locals.user.id);
@@ -59,7 +59,7 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
     if (requested !== undefined && (!Number.isSafeInteger(requested) || !programs.some(p => p.id === requested))) return res.status(404).json({ error: 'Program not found in this Event.' });
     res.json({ ...list(programs, requested), programs: programs.map(({ id, title }) => ({ id, title })) });
   });
-  router.get('/api/programs/:id/participants', (req, res) => {
+  router.get('/api/programs/:id/participants', coordinator, (req, res) => {
     const id = Number(req.params.id);
     const program = Number.isSafeInteger(id) && id > 0 ? db.prepare(`SELECT id,title,event_position AS eventPosition FROM programs WHERE id=? AND ${programAccessSql()}`).get(id, res.locals.user.id, res.locals.user.id) as { id: number; title: string; eventPosition: number | null } | undefined : undefined;
     if (!program) return res.status(404).json({ error: 'Program not found.' });

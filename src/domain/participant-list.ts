@@ -24,8 +24,7 @@ export function buildParticipantList(rows: ParticipantAssignment[]) {
     } else if (row.kind === 'text' && row.value.trim()) text.push({ value: row.value, assignments: [location] });
     else if (row.kind === 'structured' && row.name.trim()) text.push({ value: row.name, assignments: [location] });
     else if (row.kind === 'role' || row.kind === 'structured') {
-      const key = row.kind === 'structured' ? `direct:${row.partId}` : `direct:${row.partId}`;
-      waiting.set(key, { role: row.role, assignments: [location] });
+      waiting.set(`direct:${row.partId}`, { role: row.role, assignments: [location] });
     }
   }
   return { namedParticipants: [...named.values()], textAssignments: text, awaitingName: [...waiting.values()] };

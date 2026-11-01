@@ -16,3 +16,21 @@ it('shows Event assignments, filters by Program, and gives an empty view guidanc
   await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/events/42/participants?programId=2'));
   await screen.findByText('No Participant assignments yet. Add assignments to Parts to see them here.');
 });
+
+it('keeps the session recovery on retry and loads assignments once the session returns', async () => {
+  vi.stubGlobal('location', { pathname: '/programs/7/participants' });
+  const expired = { ok: false, status: 401, json: async () => ({ error: 'Sign in required.' }) };
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(expired)
+    .mockResolvedValueOnce(expired)
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ programs: [{ id: 7, title: 'Standalone Placeholder' }], namedParticipants: [], textAssignments: [{ value: 'Choir Placeholder', assignments: [{ programId: 7, programTitle: 'Standalone Placeholder', partId: 'choir', targetLabel: 'Anthem', targetKind: 'item', url: '/programs/7#part-choir' }] }], awaitingName: [] }) });
+  vi.stubGlobal('fetch', fetcher);
+  render(<ParticipantList/>);
+  expect((await screen.findByRole('alert')).textContent).toContain('Your session ended. Sign in again to view Participants.');
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  expect(await screen.findByRole('link', { name: 'Sign in again' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect((await screen.findByRole('link', { name: 'Standalone Placeholder · Anthem' })).getAttribute('href')).toBe('/programs/7#part-choir');
+  expect(fetcher).toHaveBeenLastCalledWith('/api/programs/7/participants');
+});

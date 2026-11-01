@@ -52,6 +52,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   const [definitionMessage, setDefinitionMessage] = useState('');
   const [definitionFormError, setDefinitionFormError] = useState('');
   const loadedParts = useRef(initialParts);
+  const scrolledToPart = useRef(false);
   async function loadDefinitions() {
     setDefinitionsState('loading'); setDefinitionsError(''); setDefinitionsSlow(false);
     const slowTimer = window.setTimeout(() => setDefinitionsSlow(true), 1800);
@@ -90,6 +91,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     setConflict(false); setError(''); setInvalidId('');
   }, [initialParts, initialFooter]);
   useEffect(() => { setParts(onTargets); }, [nodes]);
+  useEffect(() => { if (scrolledToPart.current || !window.location.hash.startsWith('#part-')) return; const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); if (target) { scrolledToPart.current = true; target.scrollIntoView(); } }, [parts]);
   useEffect(() => { onChange(parts, footer); }, [parts, footer]);
   useEffect(() => { onDirtyChange(dirty); }, [dirty]);
   function editPart(id: string, fields: Partial<DirectPart>) { setParts(current => current.map(part => part.id === id ? { ...part, ...fields } : part)); setDirty(true); setInvalidId(''); setMessage(''); }
