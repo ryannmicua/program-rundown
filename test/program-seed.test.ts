@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }, { version: 9 }, { version: 10 }, { version: 11 }, { version: 12 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }, { version: 9 }, { version: 10 }, { version: 11 }, { version: 12 }, { version: 13 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -52,8 +52,14 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
     const definitions = await fetch(`${f.origin}/api/participants`, { headers: { cookie } }).then(response => response.json());
     expect(definitions.participants).toHaveLength(3);
     expect(seededListing.footer).toEqual([{ id: 'demo-pianist', title: 'Pianist' }]);
+    const assignmentReview = await fetch(`${f.origin}/api/unassigned`, { headers: { cookie } }).then(response => response.json());
+    expect(assignmentReview.parts).toEqual(expect.arrayContaining([expect.objectContaining({ id: 'demo-review-unassigned', extraInfo: 'Placeholder notes for the coordinator.' })]));
     const db = openProduct(f.config.productPath);
     try {
+      const reviewProgram = db.prepare("SELECT id FROM programs WHERE seed_key = 'demo-next-worship'").get() as { id: number };
+      db.prepare("DELETE FROM parts WHERE program_id = ? AND id = 'demo-review-unassigned'").run(reviewProgram.id);
+      seedProduct(env);
+      expect(db.prepare("SELECT 1 FROM parts WHERE program_id = ? AND id = 'demo-review-unassigned'").get(reviewProgram.id)).toBeUndefined();
       expect(db.prepare("SELECT name FROM events WHERE seed_key IN ('demo-event-sabbath', 'demo-event-conference') ORDER BY name").all()).toEqual([{ name: 'Example Conference' }, { name: 'Sabbath' }]);
       expect(db.prepare("SELECT p.title, p.date, e.name AS event FROM programs p JOIN events e ON e.id = p.event_id WHERE p.seed_key IN ('demo-sabbath-vesper', 'demo-sabbath-school', 'demo-divine-worship', 'demo-ay') ORDER BY p.event_position").all()).toEqual([
         { title: 'Vesper', date: '2026-11-06', event: 'Sabbath' }, { title: 'Sabbath School', date: '2026-11-07', event: 'Sabbath' }, { title: 'Divine Worship', date: '2026-11-07', event: 'Sabbath' }, { title: 'AY', date: '2026-11-07', event: 'Sabbath' },

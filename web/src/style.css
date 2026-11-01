@@ -28,6 +28,16 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .note-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .program-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .program-list { list-style: none; padding: 0; }
+.workspace-nav { display: flex; flex-wrap: wrap; gap: .6rem 1.2rem; margin: -1.5rem 0 1.5rem; padding: .8rem 0; border-bottom: 1px solid #d8dfd5; }
+.workspace-nav a { font-weight: 650; }
+.review-filters { display: grid; grid-template-columns: auto minmax(12rem, 1fr) auto minmax(12rem, 1fr) auto; align-items: end; gap: .6rem; margin: 1.5rem 0; }
+.review-filters input, .review-filters select { min-width: 0; width: 100%; padding: .65rem; border: 1px solid #8ca99e; border-radius: 6px; background: white; font: inherit; }
+.review-list { list-style: none; padding: 0; }
+.review-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-top: 1px solid #d6ded4; }
+.review-list p { margin: .3rem 0; }
+.review-open { white-space: nowrap; }
+.review-empty { margin: 2rem 0; padding: 1.5rem; background: #f5f4ee; border-radius: 8px; }
+.unassigned-review [id^="part-target-"] { scroll-margin-top: 1rem; }
 .program-list li { padding: 1.5rem 0; border-top: 1px solid #d6ded4; }
 .event-manager { margin-top: 1.5rem; }
 .event-list, .event-program-order { padding-left: 1.25rem; }
@@ -142,4 +152,5 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
   .preview-section h4 { break-after: avoid; page-break-after: avoid; }
   a { color: inherit; text-decoration: none; }
 }
+@media (max-width: 720px) { .review-filters { grid-template-columns: 1fr; align-items: stretch; } .review-list li { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 540px) { .edition { display: none; } header { justify-content: space-between; gap: .5rem; } main { padding: 3rem 1.2rem; } .card { padding: 1.3rem; } footer span { display: none; } .reader-header h1 { font-size: clamp(1.5rem, 7.5vw, 2.2rem); letter-spacing: .06em; } }

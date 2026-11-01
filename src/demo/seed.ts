@@ -181,6 +181,16 @@ export function seedProduct(env = process.env) {
       }
       db.prepare('INSERT INTO demo_participant_list_seeds VALUES (?)').run(seededProgram.id);
     }
+    const reviewProgram = db.prepare("SELECT id FROM programs WHERE seed_key = 'demo-next-worship'").get() as { id: number } | undefined;
+    if (reviewProgram && !db.prepare('SELECT 1 FROM demo_unassigned_seeds WHERE program_id = ?').get(reviewProgram.id)) {
+      const target = db.prepare("SELECT id FROM content_nodes WHERE program_id = ? AND kind = 'item' ORDER BY position LIMIT 1").get(reviewProgram.id) as { id: string } | undefined;
+      if (target && !db.prepare("SELECT 1 FROM parts WHERE program_id = ? AND id = 'demo-review-unassigned'").get(reviewProgram.id)) {
+        const position = db.prepare('SELECT COALESCE(MAX(position) + 1, 0) AS value FROM parts WHERE program_id = ?').get(reviewProgram.id) as { value: number };
+        db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, extra_info, position) VALUES (?, 'demo-review-unassigned', ?, 'item', 'blank', 'Placeholder notes for the coordinator.', ?)").run(reviewProgram.id, target.id, position.value);
+        db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(reviewProgram.id);
+      }
+      db.prepare('INSERT INTO demo_unassigned_seeds (program_id) VALUES (?)').run(reviewProgram.id);
+    }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   finally { db.close(); }
