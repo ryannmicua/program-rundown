@@ -2,6 +2,7 @@ import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { headerValues, validateHeader, type Program } from '../domain/programs.js';
 import { readContent } from './content.js';
+import { readParts } from './parts.js';
 
 const columns = `id, title, subtitle, date, start_time AS startTime, end_time AS endTime,
   CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = programs.id) THEN 'Published' ELSE 'Draft' END AS status, version`;
@@ -24,7 +25,7 @@ export function programRoutes(db: DatabaseSync, coordinator: RequestHandler) {
     const id = Number(req.params.id);
     const program = Number.isSafeInteger(id) && id > 0 ? find(id, res.locals.user.id) : undefined;
     if (!program) return res.status(404).json({ error: 'Program not found.' });
-    res.json({ program, nodes: readContent(db, program.id) });
+    res.json({ program, nodes: readContent(db, program.id), ...readParts(db, program.id) });
   });
   router.patch('/api/programs/:id', (req, res) => {
     const id = Number(req.params.id);

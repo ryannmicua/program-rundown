@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import type { Program } from '../../../src/domain/programs.js';
 import type { ContentNode } from '../../../src/domain/content.js';
 import { ProgramRenderer } from '../programs/ProgramRenderer.js';
+import type { FooterRole, ListedPart } from '../../../src/domain/parts.js';
 
-type Listing = { program: Program; nodes: ContentNode[] };
+type Listing = { program: Program; nodes: ContentNode[]; parts: ListedPart[]; footer: FooterRole[] };
 
 export function Reader() {
   const id = /^\/p\/(\d+)$/.exec(window.location.pathname)?.[1];
@@ -32,6 +33,6 @@ export function Reader() {
   const { program, nodes } = listing;
   return <main className="reader-page">
     <nav className="reader-actions" aria-label="Reader actions"><a href={`/p/${program.id}`}>Program Rundown</a><button onClick={() => window.print()}>Print</button></nav>
-    <ProgramRenderer program={program} nodes={nodes}/>
+    <ProgramRenderer program={program} nodes={nodes} parts={listing.parts || []} footer={listing.footer || []}/>
   </main>;
 }

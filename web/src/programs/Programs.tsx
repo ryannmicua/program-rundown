@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Header, HeaderErrors, Program } from '../../../src/domain/programs.js';
 import { contentLimits, type ContentNode } from '../../../src/domain/content.js';
 import { ContentEditor } from '../editor/ContentEditor.js';
+import { PartsEditor } from '../parts/PartsEditor.js';
+import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
 
 const blank: Header = { title: '', subtitle: '', date: null, startTime: null, endTime: null };
 function HeaderSummary({ header }: { header: Header }) {
@@ -20,6 +22,9 @@ export function Programs() {
   const [programs, setPrograms] = useState<Program[]>();
   const [saved, setSaved] = useState<Program>();
   const [nodes, setNodes] = useState<ContentNode[]>([]);
+  const [parts, setParts] = useState<DirectPart[]>([]);
+  const [footerRoles, setFooterRoles] = useState<FooterRole[]>([]);
+  const [liveParts, setLiveParts] = useState<{ parts: DirectPart[]; footer: FooterRole[] }>();
   const [header, setHeader] = useState<Header>(blank);
   const [kept, setKept] = useState<Header>();
   const [errors, setErrors] = useState<HeaderErrors>({});
@@ -31,8 +36,9 @@ export function Programs() {
   const [publishError, setPublishError] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [rundownDirty, setRundownDirty] = useState(false);
+  const [partsDirty, setPartsDirty] = useState(false);
   const headerDirty = Boolean(saved && (['title', 'subtitle', 'date', 'startTime', 'endTime'] as const).some(key => header[key] !== saved[key]));
-  const unsaved = headerDirty || rundownDirty;
+  const unsaved = headerDirty || rundownDirty || partsDirty;
 
   async function publish() {
     if (!saved || unsaved) return;
@@ -67,7 +73,7 @@ export function Programs() {
       }
       if (id) {
         if (headerDirty) setKept({ ...header });
-        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []);
+        setSaved(data.program); setHeader(data.program); setNodes(data.nodes || []); setParts(data.parts || []); setFooterRoles(data.footer || []);
       } else setPrograms(data.programs);
       setError(''); setErrors({}); setConflict(false);
     } catch { setError(window.navigator.onLine ? 'Could not connect. Try again.' : 'You are offline. Reconnect, then try again.'); }
@@ -115,7 +121,7 @@ export function Programs() {
       {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{!creating && (!saved || conflict) && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
       {message && <p role="status">{message}</p>}
       {publishError && <p role="alert">{publishError} <button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>Try again</button></p>}
-      {saved?.status === 'Draft' && <div className="publish-actions"><button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>{publishing ? 'Publishing…' : 'Publish Program'}</button>{unsaved && <p>Save your Header and rundown changes before publishing.</p>}<p>Publishing makes the current Program readable by anyone with its link.</p></div>}
+      {saved?.status === 'Draft' && <div className="publish-actions"><button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>{publishing ? 'Publishing…' : 'Publish Program'}</button>{unsaved && <p>Save your Header, rundown, and Parts and Footer changes before publishing.</p>}<p>Publishing makes the current Program readable by anyone with its link.</p></div>}
       {saved?.status === 'Published' && <p className="share-link">Reader link: <a href={`/p/${saved.id}`}>{window.location.origin}/p/{saved.id}</a></p>}
       {!creating && !saved && !error && <><p role="status">{slowLoading ? 'Still loading this Draft… Your saved work will appear as soon as it arrives.' : 'Loading Draft…'}</p>{slowLoading && <div className="loading-progress" aria-hidden="true"/>}</>}
       {kept && <aside className="kept-header"><h3>Your unsaved entries</h3><p>{kept.title}</p><HeaderSummary header={kept}/>{!conflict && <button type="button" onClick={() => { setHeader(kept); setMessage('Review your entries, then save against the latest Draft.'); }}>Reapply my entries</button>}</aside>}
@@ -133,6 +139,7 @@ export function Programs() {
         <button className="primary" type="submit" disabled={busy || publishing || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>
       </form>}
     </section>
-    {saved && <ContentEditor program={saved} initialNodes={nodes} onSaved={setSaved} onDirtyChange={setRundownDirty} reload={load}/>}
+    {saved && <ContentEditor program={saved} initialNodes={nodes} parts={liveParts?.parts || parts} footer={liveParts?.footer || footerRoles} onSaved={(program, nextNodes) => { setSaved(program); setNodes(nextNodes); }} onDirtyChange={setRundownDirty} reload={load}/>}
+    {saved && <PartsEditor program={saved} nodes={nodes} initialParts={parts} initialFooter={footerRoles} onChange={(nextParts, nextFooter) => setLiveParts({ parts: nextParts, footer: nextFooter })} onDirtyChange={setPartsDirty} reload={load} onSaved={(program, nextParts, nextFooter) => { setSaved(program); setParts(nextParts); setFooterRoles(nextFooter); }} />}
   </>;
 }

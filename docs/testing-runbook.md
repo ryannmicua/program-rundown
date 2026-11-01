@@ -161,3 +161,47 @@ It also checks Header/content revision conflicts and anonymous and unauthorized 
 10. **Access denied:** a coordinator denial is surfaced with retry on the Program list; content APIs also reject anonymous requests and return 404 for another coordinator's Draft. A separate read-only Reader or Published state cannot occur in U3 because publication and Reader routes arrive in U4.
 
 Move controls are disabled at sibling boundaries, during saves, and during conflicts. The focused U3 browser journey also checks keyboard use and 1280px, 768px, and 390px layouts.
+
+## U6 direct Parts and Footer roles
+
+**Setup:** Follow the U2 setup above. Use a disposable database and the local OIDC fixture for automated tests.
+Run `npm run seed` explicitly with `APP_ENV=dev`, `DEV_COORDINATOR_ISSUER`, and `DEV_COORDINATOR_SUBJECT` configured.
+The seed adds placeholder direct Parts, an intentionally unlisted tick, and a Footer Pianist role once.
+
+**How to test:**
+
+1. Create a Draft with a Section and an `Opening Song` Item. Set its Detail to `Amazing Grace, Hymn #321`.
+2. Add a structured Song Leader with `Alex Placeholder`; add a parallel blank Part and tick **Intentionally not listed**.
+3. Add a Footer `Pianist` role with a text Participant, then save Parts and Footer.
+4. Reload and verify both assignments and the independent tick persisted.
+5. Verify the Rundown preview prints `Opening Song` bold, then the participant and Detail once beneath it. Edit the Item label without saving and verify the preview updates live.
+6. Publish and open the reader link. Verify the reader and print view use the same Part and Footer presentation.
+7. Remove a content target with a Part and save. Verify its orphaned Part is removed atomically.
+8. Open two tabs, save Parts in one, then attempt a stale Parts save in the other. Verify the stale write is rejected and editing locks until **Reload saved Program**. After reloading (or reopening the page), verify the saved Parts show and the stale draft stays separate behind **Reapply my Parts entries**, and that **Discard my kept entries** removes it.
+9. Run the explicit seed twice and confirm later Part, Footer, and Program edits remain unchanged.
+
+**Safe actions:** Automated tests use temporary databases and local placeholder identities.
+**Data changes:** Saving Parts replaces assignments and Footer order for one Program. The dev seed writes placeholder data only to product storage.
+**Cleanup:** Automated tests close their own servers and remove their own temporary databases.
+
+**Verification commands:** `npm run typecheck`, `npm test`, `npm run build`, `npm run test:e2e`, and `git diff --check`.
+Set `PLAYWRIGHT_OUTPUT_DIR` to a task-specific path outside the checkout for screenshots and failure traces.
+
+**Coverage:** `test/parts.test.ts` checks direct values, independent intentional ticks kept out of the public listing, Footer order, stale/invalid writes, restart persistence, and cleanup after content removal.
+`web/src/parts/PartsEditor.test.tsx` checks inline validation, session draft recovery, and stale draft review after a conflict.
+`web/src/editor/ContentEditor.test.tsx` checks the live preview of unsaved rundown edits with current Parts and escaped entered text.
+`web/src/programs/ProgramRenderer.test.tsx` checks shared preview formatting.
+`e2e/parts.spec.ts` checks coordinator editing, publishing, and reader rendering.
+
+**UI state inventory for the U6 PR description:**
+
+1. **Empty State — Parts editor:** Empty Drafts prompt users to add a Section or mini-program; the Footer prompt suggests a standing role.
+2. **Loading State — Draft screen:** The existing Draft loading message stays visible until Program, content, Parts, and Footer data arrive.
+3. **Error State — Parts editor:** Save errors explain the cause, preserve values, and offer a retry; the API rejects invalid targets atomically.
+4. **Offline State — Parts editor:** Failed offline saves say the coordinator is offline, keep edits in the editor and session storage, and offer retry.
+5. **Slow Network — Parts editor:** After 1.8 seconds, the save button changes its message and a progress indicator appears; the motion respects reduced-motion preferences.
+6. **Zero Search Results:** Cannot occur because U6 has no search screen or search controls.
+7. **Permission Denied — Parts editor:** A 403 explains the coordinator restriction and names the configured coordinator account as the recovery route; protected Program data is not returned.
+8. **Session Expiry — Parts editor:** Unsaved assignments are stored in session storage; the alert keeps current values and opens sign-in in another tab. `web/src/parts/PartsEditor.test.tsx` checks recovery after remount.
+9. **Form Validation — Parts editor:** Missing Footer titles and required role labels receive inline errors on their exact fields; server validation also rejects invalid entries.
+10. **Success State — Parts editor:** A status message confirms the save and points to the preview and publishing action. Component and browser tests verify saved preview and reader output.

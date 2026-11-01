@@ -18,6 +18,19 @@ it('keeps grouping, literal labels and multiline Detail in a readable preview', 
   expect(preview.querySelector('script')).toBeNull();
 });
 
+it('previews unsaved rundown edits live with the current Parts and Footer roles', () => {
+  const parts = [
+    { id: 'leader', targetId: 'prayer', targetKind: 'item' as const, kind: 'structured' as const, value: '', role: 'Song Leader', name: '', extraInfo: '', intentionallyNotListed: false },
+    { id: 'pianist-part', targetId: 'pianist', targetKind: 'footer' as const, kind: 'text' as const, value: 'Jamie Placeholder', role: '', name: '', extraInfo: '', intentionallyNotListed: false },
+  ];
+  render(<ContentEditor program={program} initialNodes={[section, item]} parts={parts} footer={[{ id: 'pianist', title: 'Pianist' }]} onSaved={vi.fn()} onDirtyChange={vi.fn()} reload={vi.fn()}/>);
+  fireEvent.change(screen.getByLabelText('Item label'), { target: { value: 'Opening Song' } });
+  const listing = screen.getByRole('article');
+  const row = within(listing).getByText('Opening Song').closest('li')!;
+  expect(within(row).getByText('Song Leader')).toBeDefined();
+  expect(within(within(listing).getByRole('region', { name: 'Footer standing roles' })).getByText('Jamie Placeholder')).toBeDefined();
+});
+
 it('keeps entries on a network error and allows retry', async () => {
   const fetcher = vi.fn().mockRejectedValueOnce(Error('offline')).mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, version: 2 }, nodes: [section, { ...item, label: 'Edited prayer' }] }) });
   vi.stubGlobal('fetch', fetcher);
@@ -29,7 +42,7 @@ it('keeps entries on a network error and allows retry', async () => {
   expect((screen.getByLabelText('Item label') as HTMLInputElement).value).toBe('Edited prayer');
   fireEvent.submit(screen.getByRole('form', { name: 'Rundown' }));
   await screen.findByText('Rundown saved.');
-  expect(saved).toHaveBeenCalledWith({ ...program, version: 2 });
+  expect(saved).toHaveBeenCalledWith({ ...program, version: 2 }, [section, { ...item, label: 'Edited prayer' }]);
 });
 
 it('announces the empty editor and keeps move controls disabled at sibling boundaries', () => {

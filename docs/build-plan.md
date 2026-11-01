@@ -330,7 +330,7 @@ Represent each spot as capable of holding independently editable parallel Parts;
 - Preserve `Congregation` and a multi-person text value without splitting names; extra info can accompany a blank value.
 - Footer credits do not become timed activities. A rejected assignment edit leaves previous content intact.
 
-**Files and proof:** `src/domain/parts.ts`, `src/api/parts.ts`, `web/src/parts/`, `test/parts.test.ts`, `e2e/assignments.spec.ts`.
+**Files and proof:** `src/domain/parts.ts`, `src/api/parts.ts`, `web/src/parts/`, `test/parts.test.ts`, `e2e/parts.spec.ts`.
 **Dependencies:** U5; none of the open product questions for direct values.
 
 ### 7. U7 — Reuse Participant definitions by name or role
