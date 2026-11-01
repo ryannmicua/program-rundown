@@ -91,3 +91,28 @@ it('preserves demo Part removals on repeat seed and keeps the configured coordin
     } finally { reloaded.close(); }
   } finally { await f.close(); }
 });
+
+it('refuses to copy into a destination Program that already has 600 Parts', async () => {
+  const f = await fixture();
+  try {
+    seedProduct({ APP_ENV: 'dev', PRODUCT_DB_PATH: f.config.productPath, DEV_COORDINATOR_ISSUER: f.config.testerIssuer, DEV_COORDINATOR_SUBJECT: f.config.testerSubject });
+    const cookie = await f.signIn();
+    const events = await fetch(`${f.origin}/api/events`, { headers: { cookie } }).then(response => response.json());
+    const sabbath = events.events.find((event: { name: string }) => event.name === 'Sabbath');
+    const sourceProgram = sabbath.programs.find((program: { title: string }) => program.title === 'Divine Worship');
+    const destinationProgram = sabbath.programs.find((program: { title: string }) => program.title === 'Sabbath School');
+    const destination = await fetch(`${f.origin}/api/programs/${destinationProgram.id}`, { headers: { cookie } }).then(response => response.json());
+    const target = destination.nodes.find((node: { id: string }) => node.id.endsWith('-main'));
+    const db = openProduct(f.config.productPath);
+    try {
+      const insert = db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, value, role, name, extra_info, intentionally_not_listed, position) VALUES (?, ?, ?, ?, 'blank', '', '', '', '', 0, ?)");
+      for (let index = destination.parts.length; index < 600; index++) insert.run(destinationProgram.id, `filler-${index}`, target.id, target.kind, 1000 + index);
+    } finally { db.close(); }
+    const source = await fetch(`${f.origin}/api/programs/${sourceProgram.id}`, { headers: { cookie } }).then(response => response.json());
+    const response = await fetch(`${f.origin}/api/programs/${sourceProgram.id}/parts/demo-move-speaker/transfer`, { method: 'POST', headers: { cookie, origin: f.origin, 'content-type': 'application/json' }, body: JSON.stringify({ destinationProgramId: destinationProgram.id, destinationTargetId: target.id, destinationTargetKind: target.kind, operation: 'copy', copyMode: 'everything', sourceVersion: source.program.version, destinationVersion: destination.program.version }) });
+    expect(response.status).toBe(400);
+    const latest = await fetch(`${f.origin}/api/programs/${destinationProgram.id}`, { headers: { cookie } }).then(response => response.json());
+    expect(latest.parts).toHaveLength(600);
+    expect(latest.program.version).toBe(destination.program.version);
+  } finally { await f.close(); }
+});

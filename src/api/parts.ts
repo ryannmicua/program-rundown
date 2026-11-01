@@ -72,6 +72,8 @@ export function partsRoutes(db: DatabaseSync, coordinator: RequestHandler) {
         ? db.prepare('SELECT 1 FROM footer_roles WHERE program_id = ? AND id = ?').get(destination.id, destinationTargetId)
         : db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ? AND id = ? AND kind = ?').get(destination.id, destinationTargetId, destinationTargetKind);
       if (!targetExists) { db.exec('ROLLBACK'); return res.status(409).json({ error: 'The destination changed. Reload the Program and choose an existing Item, block, or Footer role.' }); }
+      const destinationCount = db.prepare('SELECT COUNT(*) AS count FROM parts WHERE program_id = ?').get(destination.id) as { count: number };
+      if (!(source.id === destination.id && operation === 'move') && destinationCount.count >= 600) { db.exec('ROLLBACK'); return res.status(400).json({ error: 'The destination Program already has 600 Parts. Remove a Part there first.' }); }
       if (source.id === destination.id && operation === 'move' && sourcePart.targetId === destinationTargetId && sourcePart.targetKind === destinationTargetKind) { db.exec('ROLLBACK'); return res.status(400).json({ error: 'Choose a different destination for this Part.' }); }
       const sourceUpdate = db.prepare(`UPDATE programs SET version = version + 1 WHERE id = ? AND ${programAccessSql()} AND version = ?`).run(source.id, userId, userId, sourceVersion);
       if (!sourceUpdate.changes) { db.exec('ROLLBACK'); return res.status(409).json({ error: 'A Program changed. Reload both Programs, then review and try the operation again.' }); }

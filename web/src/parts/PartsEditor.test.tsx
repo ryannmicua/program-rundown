@@ -161,3 +161,24 @@ it('previews destination Parts before moving or copying and acknowledges the com
   expect(JSON.parse(String(request[1]?.body))).toMatchObject({ destinationProgramId: 2, operation: 'copy', copyMode: 'everything' });
   expect(screen.getByText(/Part copied to Opening Song/)).toBeDefined();
 });
+
+it('recovers the move or copy panel after a failed load when the destination stays the same', async () => {
+  const eventProgram = { ...program, eventId: 5 };
+  let failPrograms = true;
+  const reload = vi.fn(async () => {});
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return failPrograms ? new Response(JSON.stringify({ error: 'Programs are unavailable right now.' }), { status: 500 }) : new Response(JSON.stringify({ programs: [eventProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    throw Error(`Unexpected request ${input}`);
+  }));
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [], reload }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Programs are unavailable right now.');
+  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  failPrograms = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Reload Programs and destination' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(reload).toHaveBeenCalled();
+});

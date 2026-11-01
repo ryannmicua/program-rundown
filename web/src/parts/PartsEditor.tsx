@@ -36,6 +36,8 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   const [transferPartId, setTransferPartId] = useState('');
   const [transferPrograms, setTransferPrograms] = useState<(Program & { eventId?: number | null })[]>([]);
   const [transferProgramId, setTransferProgramId] = useState(program.id);
+  const [transferVersion, setTransferVersion] = useState(0);
+  const [transferLoad, setTransferLoad] = useState(0);
   const [transferTargets, setTransferTargets] = useState<{ id: string; kind: DirectPart['targetKind']; label: string; parts: DirectPart[] }[]>([]);
   const [transferTarget, setTransferTarget] = useState('');
   const [transferState, setTransferState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -62,14 +64,8 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     finally { window.clearTimeout(slowTimer); setDefinitionsSlow(false); }
   }
   useEffect(() => { void loadDefinitions(); }, []);
-  async function openTransfer(partId: string) {
-    setTransferPartId(partId); setTransferProgramId(program.id); setTransferState('loading'); setTransferError(''); setTransferMessage('');
-    try {
-      const response = await fetch('/api/programs');
-      const data = await response.json();
-      if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load Programs.');
-      setTransferPrograms(data.programs || []);
-    } catch (error) { setTransferState('error'); setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load Programs.') : 'You are offline. Reconnect, then reload Programs to choose a destination.'); }
+  function openTransfer(partId: string) {
+    setTransferPartId(partId); setTransferProgramId(program.id); setTransferMessage(''); setTransferLoad(count => count + 1);
   }
   useEffect(() => {
     if (!transferPartId) return;
@@ -77,12 +73,13 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     const slowTimer = window.setTimeout(() => setTransferSlow(true), 1800);
     setTransferSlow(false);
     setTransferState('loading'); setTransferError(''); setTransferTargets([]); setTransferTarget('');
-    fetch(`/api/programs/${transferProgramId}`).then(async response => { const data = await response.json(); if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load destination.');
+    const load = async (url: string) => { const response = await fetch(url); const data = await response.json(); if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load Programs or destination.'); return data; };
+    Promise.all([load('/api/programs'), load(`/api/programs/${transferProgramId}`)]).then(([list, data]) => {
       const targets = [...(data.nodes || []).map((node: ContentNode) => ({ id: node.id, kind: node.kind as DirectPart['targetKind'], label: node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'item' ? 'Untitled Item' : 'Untitled mini-program') })), ...(data.footer || []).map((role: FooterRole) => ({ id: role.id, kind: 'footer' as const, label: `Footer: ${role.title}` }))].map(target => ({ ...target, parts: (data.parts || []).filter((part: DirectPart) => part.targetId === target.id && part.targetKind === target.kind) }));
-      if (current) { setTransferTargets(targets); setTransferTarget(targets[0] ? `${targets[0].kind}:${targets[0].id}` : ''); setTransferState('ready'); }
-    }).catch(error => { if (current) { setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load destination.') : 'You are offline. Reconnect, then reload the destination.'); setTransferState('error'); } }).finally(() => window.clearTimeout(slowTimer));
+      if (current) { setTransferPrograms(list.programs || []); setTransferVersion(data.program.version); setTransferTargets(targets); setTransferTarget(targets[0] ? `${targets[0].kind}:${targets[0].id}` : ''); setTransferState('ready'); }
+    }).catch(error => { if (current) { setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load Programs or destination.') : 'You are offline. Reconnect, then reload Programs and destination.'); setTransferState('error'); } }).finally(() => window.clearTimeout(slowTimer));
     return () => { current = false; window.clearTimeout(slowTimer); };
-  }, [transferPartId, transferProgramId]);
+  }, [transferPartId, transferProgramId, transferLoad]);
   useEffect(() => { try { if (Object.values(definitionDraft).some(Boolean)) window.sessionStorage.setItem(definitionDraftKey, JSON.stringify({ id: editingDefinition, fields: definitionDraft })); else window.sessionStorage.removeItem(definitionDraftKey); } catch { /* keep the form available in this page */ } }, [definitionDraft, editingDefinition, definitionDraftKey]);
   useEffect(() => { try { if (dirty && loadedParts.current === initialParts) window.sessionStorage.setItem(draftKey, JSON.stringify({ version: program.version, parts, footer })); } catch { /* current page state remains available */ } }, [parts, footer, dirty, draftKey, program.version]);
   useEffect(() => {
@@ -147,7 +144,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     setTransferBusy(true); setTransferSlow(false); setTransferError(''); setTransferMessage('');
     const slowTimer = window.setTimeout(() => setTransferSlow(true), 1800);
     try {
-      const response = await fetch(`/api/programs/${program.id}/parts/${encodeURIComponent(sourcePart.id)}/transfer`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ destinationProgramId: targetProgram.id, destinationTargetId: target.id, destinationTargetKind: target.kind, operation, copyMode, sourceVersion: program.version, destinationVersion: targetProgram.id === program.id ? program.version : targetProgram.version }) });
+      const response = await fetch(`/api/programs/${program.id}/parts/${encodeURIComponent(sourcePart.id)}/transfer`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ destinationProgramId: targetProgram.id, destinationTargetId: target.id, destinationTargetKind: target.kind, operation, copyMode, sourceVersion: program.version, destinationVersion: targetProgram.id === program.id ? program.version : transferVersion }) });
       const data = await response.json();
       if (!response.ok) { setTransferError(response.status === 401 ? 'Your session ended. Sign in again, then reload both Programs.' : response.status === 403 ? data.error || 'This destination is outside the Event you can manage.' : data.error || 'Could not complete the Part operation. Reload and try again.'); return; }
       const updated = data.source;
@@ -169,11 +166,10 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
       <label>Part extra info (optional)<textarea aria-label="Part extra info" maxLength={2000} value={part.extraInfo} onChange={event => editPart(part.id, { extraInfo: event.target.value })}/></label>
       <label><input type="checkbox" checked={part.intentionallyNotListed} onChange={event => editPart(part.id, { intentionallyNotListed: event.target.checked })}/> Intentionally not listed</label>
       <button type="button" onClick={() => { setParts(current => current.filter(entry => entry.id !== part.id)); setDirty(true); }}>Remove participant</button>
-      <button type="button" disabled={dirty || busy || transferBusy} onClick={() => { if (transferPartId === part.id) setTransferPartId(''); else void openTransfer(part.id); }}>{transferPartId === part.id ? 'Close move or copy' : 'Move or copy Part'}</button>
+      <button type="button" disabled={dirty || busy || transferBusy} onClick={() => { if (transferPartId === part.id) setTransferPartId(''); else openTransfer(part.id); }}>{transferPartId === part.id ? 'Close move or copy' : 'Move or copy Part'}</button>
       {transferPartId === part.id && <section className="part-transfer" aria-label={`Move or copy ${participant(part) || 'blank Part'}`}>
         <h4>Move or copy this Part</h4>
         {dirty && <p>Save your Parts changes before moving or copying.</p>}
-        {transferState === 'error' && <p role="alert">{transferError || 'Could not load Programs or destination. Reload this page to try again.'}</p>}
         {transferState === 'loading' && <><p role="status">{transferSlow ? 'Still loading the destination… waiting for saved Parts.' : 'Loading destination…'}</p>{transferSlow && <div className="loading-progress" aria-label="Loading destination"/>}</>}
         {transferState === 'ready' && <>
           <label>Destination Program<select aria-label="Destination Program" value={transferProgramId} onChange={event => setTransferProgramId(Number(event.target.value))}>{transferPrograms.filter(candidate => candidate.id === program.id || (program.eventId != null && candidate.eventId === program.eventId)).map(candidate => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}</select></label>
@@ -184,7 +180,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
           <button type="button" disabled={dirty || transferBusy || !transferTarget} onClick={() => void transfer('copy', 'without-participant')}>Copy without Participant</button>
           <button type="button" disabled={dirty || transferBusy || !transferTarget} onClick={() => void transfer('copy', 'everything')}>Copy everything</button>
         </>}
-        {transferError && <div role="alert"><p>{transferError}</p><button type="button" disabled={transferBusy} onClick={() => void openTransfer(part.id)}>Reload Programs and destination</button></div>}
+        {transferError && <div role="alert"><p>{transferError}</p><button type="button" disabled={transferBusy} onClick={() => { void reload(); openTransfer(part.id); }}>Reload Programs and destination</button></div>}
         {transferBusy && transferSlow && <><p role="status">The saved Parts stay in place until the operation finishes.</p><div className="loading-progress" aria-label="Part operation in progress"/></>}
       </section>}
     </fieldset>)}
