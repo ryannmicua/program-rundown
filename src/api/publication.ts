@@ -2,6 +2,7 @@ import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { readContent } from './content.js';
 import { readParts } from './parts.js';
+import { programAccessSql } from '../domain/access.js';
 
 const programColumns = `p.id, p.title, p.subtitle, p.date, p.start_time AS startTime,
   p.end_time AS endTime, 'Published' AS status, p.version`;
@@ -11,7 +12,7 @@ export function publicationRoutes(db: DatabaseSync, coordinator: RequestHandler)
   router.post('/api/programs/:id/publish', coordinator, (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isSafeInteger(id) || id < 1) return res.status(404).json({ error: 'Program not found.' });
-    const program = db.prepare('SELECT id FROM programs WHERE id = ? AND owner_id = ?').get(id, res.locals.user.id);
+    const program = db.prepare(`SELECT id FROM programs WHERE id = ? AND ${programAccessSql()}`).get(id, res.locals.user.id, res.locals.user.id);
     if (!program) return res.status(404).json({ error: 'Program not found.' });
     db.prepare('INSERT OR IGNORE INTO program_publications (program_id) VALUES (?)').run(id);
     res.json({ url: `/p/${id}` });

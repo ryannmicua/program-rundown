@@ -37,7 +37,7 @@ describe('isolated dev feedback', () => {
     expect(readFileSync(f.config.feedbackPath)).toEqual(before);
     await f.restart();
     expect((await (await get(`/api/feedback/${id}`)).json()).feedback.note).toBe('<script>alert(1)</script>');
-    const db = new DatabaseSync(f.config.productPath); expect(db.prepare('PRAGMA foreign_keys').get()).toBeDefined(); expect(db.prepare('SELECT * FROM schema_migrations').all()).toHaveLength(7); db.close();
+    const db = new DatabaseSync(f.config.productPath); expect(db.prepare('PRAGMA foreign_keys').get()).toBeDefined(); expect(db.prepare('SELECT * FROM schema_migrations').all()).toHaveLength(8); db.close();
   });
   it.each([{ appEnv: 'dev', enabled: 'false' }, { appEnv: 'test', enabled: 'true' }, { appEnv: 'production', enabled: 'true' }])('never opens disabled feedback storage: %j', async options => {
     const f = await setup(options);

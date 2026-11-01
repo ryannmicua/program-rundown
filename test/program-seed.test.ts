@@ -19,7 +19,7 @@ it('upgrades a U1 database additively, replays safely, and keeps U1 identity/ses
     old.close();
     for (let attempt = 0; attempt < 2; attempt++) {
       const db = openProduct(path);
-      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }]);
+      expect(db.prepare('SELECT version FROM schema_migrations ORDER BY version').all()).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }, { version: 6 }, { version: 7 }, { version: 8 }]);
       expect(db.prepare('SELECT * FROM sessions WHERE id = ? AND expires_at > ?').get('hashed-placeholder', Date.now())).toMatchObject({ identity_id: 1 });
       expect(db.prepare('SELECT * FROM identities WHERE id = ?').get(1)).toMatchObject({ subject: 'placeholder' });
       expect(db.prepare('SELECT 1 FROM coordinator_grants WHERE identity_id = ?').get(1)).toBeDefined();
@@ -39,7 +39,7 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
     const response = await fetch(`${f.origin}/api/programs`, { headers: { cookie } });
     expect(response.status).toBe(200);
     const { programs } = await response.json();
-    expect(programs).toHaveLength(2);
+    expect(programs).toHaveLength(11);
     expect(programs.find((program: { title: string }) => program.title === 'Community Gathering')).toMatchObject({ status: 'Draft', date: null, startTime: '09:00', endTime: '12:00' });
     expect(programs.find((program: { title: string }) => program.title === 'Example Published Program')).toMatchObject({ status: 'Published', subtitle: 'A day of gratitude' });
     const seededCommunity = programs.find((program: { title: string }) => program.title === 'Community Gathering');
@@ -54,6 +54,10 @@ it('seeds before first sign-in, grants the configured coordinator access, and pr
     expect(seededListing.footer).toEqual([{ id: 'demo-pianist', title: 'Pianist' }]);
     const db = openProduct(f.config.productPath);
     try {
+      expect(db.prepare("SELECT name FROM events WHERE seed_key IN ('demo-event-sabbath', 'demo-event-conference') ORDER BY name").all()).toEqual([{ name: 'Example Conference' }, { name: 'Sabbath' }]);
+      expect(db.prepare("SELECT p.title, p.date, e.name AS event FROM programs p JOIN events e ON e.id = p.event_id WHERE p.seed_key IN ('demo-sabbath-vesper', 'demo-sabbath-school', 'demo-divine-worship', 'demo-ay') ORDER BY p.event_position").all()).toEqual([
+        { title: 'Vesper', date: '2026-11-06', event: 'Sabbath' }, { title: 'Sabbath School', date: '2026-11-07', event: 'Sabbath' }, { title: 'Divine Worship', date: '2026-11-07', event: 'Sabbath' }, { title: 'AY', date: '2026-11-07', event: 'Sabbath' },
+      ]);
       const community = programs.find((program: { title: string }) => program.title === 'Community Gathering');
       db.prepare('UPDATE programs SET title = ?, subtitle = ?, date = ?, version = version + 1 WHERE id = ?').run('Edited Gathering', 'Saved subtitle', '2026-11-07', community.id);
       const owner = db.prepare('SELECT owner_id FROM programs WHERE id = ?').get(programs[0].id) as { owner_id: number };

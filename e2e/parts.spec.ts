@@ -34,7 +34,7 @@ test('coordinator manages parallel direct Parts and Footer roles in the shared r
     await footer.getByLabel('Participant form').first().selectOption('text');
     await footer.getByLabel('Participant text').fill('Jamie Placeholder');
     await page.getByRole('button', { name: 'Save Parts and Footer' }).click();
-    await expect(page.getByRole('region', { name: 'Parts and Footer editor' }).getByRole('status')).toContainText('Parts and Footer saved.');
+    await expect(page.getByRole('region', { name: 'Parts and Footer editor' }).getByRole('status').filter({ hasText: 'Parts and Footer saved.' })).toContainText('Parts and Footer saved.');
 
     const listing = page.getByRole('article');
     await expect(listing.getByText('Opening Song', { exact: true })).toBeVisible();

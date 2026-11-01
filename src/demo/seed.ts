@@ -20,6 +20,39 @@ export function seedProduct(env = process.env) {
     db.prepare('INSERT OR IGNORE INTO program_publications (program_id) VALUES (?)').run(published.id);
     // A configured replacement tester must also manage all demo Programs, without resetting Headers.
     db.prepare('UPDATE programs SET owner_id = ? WHERE seed_key IS NOT NULL AND owner_id != ?').run(identity.id, identity.id);
+    const seededEvents = [
+      { key: 'demo-event-sabbath', name: 'Sabbath', start: '2026-11-06', end: '2026-11-07', programs: [
+        ['demo-sabbath-vesper', 'Vesper', '2026-11-06', 1], ['demo-sabbath-school', 'Sabbath School', '2026-11-07', 0], ['demo-divine-worship', 'Divine Worship', '2026-11-07', 1], ['demo-ay', 'AY', '2026-11-07', 0],
+        ['demo-next-vesper', 'Vesper', '2026-11-13', 0], ['demo-next-worship', 'Divine Worship', '2026-11-14', 0],
+      ] as const },
+      { key: 'demo-event-conference', name: 'Example Conference', start: '2026-11-20', end: '2026-11-21', programs: [
+        ['demo-conference-session-one', 'Conference Session One', '2026-11-20', 0], ['demo-conference-session-two', 'Conference Session Two', '2026-11-21', 0], ['demo-conference-undated', 'Conference Welcome', null, 1],
+      ] as const },
+    ];
+    for (const eventSeed of seededEvents) {
+      db.prepare('INSERT OR IGNORE INTO events (owner_id, name, start_date, end_date, group_by_date, seed_key) VALUES (?, ?, ?, ?, 1, ?)').run(identity.id, eventSeed.name, eventSeed.start, eventSeed.end, eventSeed.key);
+      const event = db.prepare('SELECT id FROM events WHERE seed_key = ?').get(eventSeed.key) as { id: number };
+      db.prepare('UPDATE events SET owner_id = ? WHERE id = ? AND owner_id != ?').run(identity.id, event.id, identity.id);
+      if (db.prepare('INSERT OR IGNORE INTO demo_event_seeds (event_id) VALUES (?)').run(event.id).changes) {
+        const insert = db.prepare('INSERT OR IGNORE INTO programs (owner_id, title, date, event_id, event_position, seed_key) VALUES (?, ?, ?, ?, ?, ?)');
+        eventSeed.programs.forEach(([key, title, date, published], index) => {
+          insert.run(identity.id, title, date, event.id, index, key);
+          const program = db.prepare('SELECT id FROM programs WHERE seed_key = ?').get(key) as { id: number };
+          if (published) db.prepare('INSERT OR IGNORE INTO program_publications (program_id) VALUES (?)').run(program.id);
+          if (db.prepare('INSERT OR IGNORE INTO demo_content_seeds (program_id) VALUES (?)').run(program.id).changes && !db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ?').get(program.id)) {
+            const sectionId = `event-${key}-section`;
+            writeContent(db, program.id, [
+              { id: sectionId, parentId: null, kind: 'section', label: 'Gathering', detail: '', startTime: null, endTime: null },
+              { id: `event-${key}-opening`, parentId: sectionId, kind: 'item', label: 'Welcome', detail: `${title} placeholder welcome.`, startTime: null, endTime: null },
+              { id: `event-${key}-main`, parentId: sectionId, kind: 'item', label: 'Main Program', detail: 'Placeholder program details.', startTime: null, endTime: null },
+              { id: `event-${key}-closing`, parentId: sectionId, kind: 'item', label: 'Closing Remarks', detail: '', startTime: null, endTime: null },
+            ]);
+            db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(program.id);
+          }
+        });
+      }
+    }
+    db.prepare('UPDATE programs SET owner_id = ? WHERE seed_key IS NOT NULL AND owner_id != ?').run(identity.id, identity.id);
     if (!db.prepare('SELECT 1 FROM demo_content_seeds WHERE program_id = ?').get(published.id)) {
       db.prepare("UPDATE programs SET subtitle = 'A day of gratitude' WHERE id = ? AND subtitle = ''").run(published.id);
       if (!db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ?').get(published.id)) {

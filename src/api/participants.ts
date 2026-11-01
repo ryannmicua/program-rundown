@@ -1,5 +1,6 @@
 import { Router, type RequestHandler } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
+import { participantAccessSql, programAccessSql } from '../domain/access.js';
 
 type Definition = { role: string; name: string; honorific: string; position: string; organization: string; subtitle: string };
 const fields: (keyof Definition)[] = ['role', 'name', 'honorific', 'position', 'organization', 'subtitle'];
@@ -14,9 +15,10 @@ function validate(value: unknown): { data?: Definition; error?: string } {
 type Row = Definition & { id: number; programs: string };
 function read(db: DatabaseSync, ownerId: number, id?: number) {
   const sql = `SELECT d.id, d.role, d.name, d.honorific, d.position, d.organization, d.subtitle,
-    (SELECT json_group_array(json_object('id', used.id, 'title', used.title, 'status', used.status)) FROM (SELECT DISTINCT p.id, p.title, CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = p.id) THEN 'Published' ELSE 'Draft' END AS status FROM parts x JOIN programs p ON p.id = x.program_id WHERE x.participant_id = d.id AND p.owner_id = d.owner_id) used) AS programs
-    FROM participants d WHERE d.owner_id = ? ${id ? 'AND d.id = ?' : ''} ORDER BY d.role COLLATE NOCASE, d.name COLLATE NOCASE, d.id`;
-  return (id ? db.prepare(sql).all(ownerId, id) : db.prepare(sql).all(ownerId)) as Row[];
+    (SELECT json_group_array(json_object('id', used.id, 'title', used.title, 'status', used.status)) FROM (SELECT DISTINCT p.id, p.title, CASE WHEN EXISTS (SELECT 1 FROM program_publications pub WHERE pub.program_id = p.id) THEN 'Published' ELSE 'Draft' END AS status FROM parts x JOIN programs p ON p.id = x.program_id WHERE x.participant_id = d.id AND ${programAccessSql('p')}) used) AS programs
+    FROM participants d WHERE ${participantAccessSql('d')} ${id ? 'AND d.id = ?' : ''} ORDER BY d.role COLLATE NOCASE, d.name COLLATE NOCASE, d.id`;
+  const params = id === undefined ? [ownerId, ownerId, ownerId, ownerId, ownerId] : [ownerId, ownerId, ownerId, ownerId, ownerId, id];
+  return db.prepare(sql).all(...params) as Row[];
 }
 function serialize(row: Row) { return { ...row, programs: JSON.parse(row.programs || '[]') }; }
 export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler) {
@@ -39,7 +41,7 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
     const result = validate(req.body);
     if (result.error) return res.status(400).json({ error: result.error });
     const d = result.data!;
-    db.prepare('UPDATE participants SET role = ?, name = ?, honorific = ?, position = ?, organization = ?, subtitle = ? WHERE id = ? AND owner_id = ?').run(d.role, d.name, d.honorific, d.position, d.organization, d.subtitle, id, res.locals.user.id);
+    db.prepare(`UPDATE participants SET role = ?, name = ?, honorific = ?, position = ?, organization = ?, subtitle = ? WHERE id = ? AND ${participantAccessSql()}`).run(d.role, d.name, d.honorific, d.position, d.organization, d.subtitle, id, res.locals.user.id, res.locals.user.id, res.locals.user.id);
     const updated = read(db, res.locals.user.id, id)[0];
     res.json({ participant: serialize(updated) });
   });
@@ -47,7 +49,7 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
     const id = Number(req.params.id);
     const current = Number.isSafeInteger(id) && id > 0 ? read(db, res.locals.user.id, id)[0] : undefined;
     if (!current) return res.status(404).json({ error: 'Participant not found.' });
-    try { db.prepare('DELETE FROM participants WHERE id = ? AND owner_id = ?').run(id, res.locals.user.id); }
+    try { db.prepare(`DELETE FROM participants WHERE id = ? AND ${participantAccessSql()}`).run(id, res.locals.user.id, res.locals.user.id, res.locals.user.id); }
     catch { return res.status(409).json({ error: 'This Participant is in use. Remove its references before deleting it.' }); }
     res.status(204).end();
   });
