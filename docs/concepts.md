@@ -521,16 +521,27 @@ An unnamed role stays visible as work awaiting a name, without counting it as a 
 
 ### Program template
 
-A **Program template** is a reusable starting structure for a new Program.
-It can describe the Header, Sections, mini-programs, Items, Parts, and Footer needed for a recurring kind of listing.
+A **Program template** is an account-owned snapshot that a coordinator saves from a Program they manage.
+It supplies reusable Sections, mini-programs, Items, Parts, and Footer structure across all of that coordinator's Events.
 Example: `Example Worship Template` supplies the structure for a new `Divine Worship` Program.
-A coordinator selects an available template and creates a separate Draft, then supplies the new Program's title and optional date.
+
+A coordinator may share a template so other coordinators can see it.
+Another coordinator must copy/import the shared template into their own account before using it to create a Program.
+The imported template is an independent owned copy, never a link to the shared template; changes to either copy do not update the other.
+Sharing a template grants no rights to its source Program or Event.
+
+A coordinator selects an owned template and creates a separate Draft, supplying the new Program's title and optional date.
+The new Program preserves the nested structure, labels, Detail, Footer, and Parts in order, with their independent extra info and parallel placement.
+Participant assignments do not carry over: clear direct person/group text, structured names and person details, and shared Participant references.
+Retain explicit role placeholders without named holders; extra info alone remains unassigned.
+Header dates and times, including mini-program Header dates/times, do not carry over.
+Save-as-template removes these assignments and Header dates/times from the snapshot too, so sharing cannot expose them.
 The new Program has its own coordinator access and optional Event link; it never inherits publication status or access grants from a source Program.
-Changes to the new Program do not alter the template or other Programs created from it.
+Changes to the source Program, template, or new Program do not update the other records or other Programs created from the template.
 A template is not a published Program, a mini-program, a recurrence rule, or a copy-forward operation on last week's Programs.
 
-The small first slice covers creating a Program from an available template.
-Who supplies and manages templates, and which dates, times, Parts, and Participant details carry over, remain [open template questions](#open-template-questions).
+The first slice covers saving an owned template and creating a Program from it (U12).
+Sharing and importing independent copies follow in U13; T1–T2 are settled below.
 
 ### Role
 
@@ -730,18 +741,12 @@ The earlier decisions remain in place, with the additional decisions below.
     The coordinator decides whether to move an existing Part elsewhere.
     Copies leave the source intact and offer `Copy without Participant` or `Copy everything` (Q5).
     A full copy retains the shared Participant reference; a copy without Participant clears person or group assignments and retains explicit role placeholders.
-20. **Program templates.**
-    A coordinator can create a separate Draft Program from an available reusable template.
-    Template management and carry-over choices remain open below; recurrence and copy-forward stay deferred.
-
-### Open template questions
-
-Q1–Q5 are settled above; only these new template choices remain for the captain.
-
-| ID | Question | Affected work |
-|---|---|---|
-| T1 | Who supplies templates? May coordinators save a Program as a template, edit templates, and share them across Events or coordinators? | U12 template availability and management boundary |
-| T2 | Which Header dates/times, Parts, and extra info carry into a new Program? Should Participant assignments be cleared, optional, or retained as shared references? | U12 creation preview and carry-over rules |
+20. **Program templates (T1–T2).**
+    Any coordinator can save a managed Program as a template owned by their account and usable across all their Events (T1).
+    They may share the template for other coordinators to see and import as independent owned copies, never links.
+    Sharing grants no access to the source Program.
+    A new Draft copies Parts in order with their extra info, but no Participant assignments or Header dates/times (T2).
+    The new Program takes its own title and optional date; recurrence and copy-forward stay deferred.
 
 ### Deferred capabilities
 

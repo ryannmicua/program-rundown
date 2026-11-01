@@ -23,7 +23,7 @@ The application must preserve these requirements from the concepts:
 | R7 | Blank, omitted, and role-only Parts without named holders count as unassigned. Extra info alone does not assign anyone. | U10 |
 | R8 | The Participant list covers the whole Event, filterable by Program; standalone Programs offer their own list. Group shared references by definition, preserve direct text per Part, and show unnamed roles separately. | U11 |
 | R9 | Dev has one synthetic test user, accessible demo data, portal registration, and feedback absent from production. | U1 onward |
-| R10 | Coordinators can create a separate Draft Program from an available template. Template management and carry-over choices await T1–T2. | U12 |
+| R10 | Coordinators save Programs as account-owned templates usable across their Events. Shared templates must be imported as independent owned copies. New Drafts copy ordered Parts and extra info, without Participant assignments or Header dates/times. | U12, U13 |
 
 R6–R8 are settled decisions, replacing the three earlier open questions.
 The follow-up Q1–Q5 are also settled; the decision record below names each answer.
@@ -84,7 +84,7 @@ Add schema only as each slice needs it, rather than implementing the entire mode
 | Participants | Definitions shared between Programs, with role, optional name, honorific, position, organization, and subtitle. Use stable identities and explicit reuse; matching text never merges people. Check access before selection, reuse, or edits. |
 | Footer | Ordered standing-role entries with the same Part rules, including group text for multiple holders. Footer entries are outside the activity sequence. |
 | Event | Name, optional dates, linked Program ordering, and optional date-grouping preference. Date groups derive from Program dates, never occurrence records. |
-| Template | Reusable starting structure, instantiated as a separate Draft with its own coordinator and optional Event link. Final fields and access scope depend on T1–T2. |
+| Template | Account-owned snapshot saved from a Program, reusable across Events. Sharing permits other coordinators to view and import independent owned copies, without source Program access. Instantiation creates a separate Draft; ordered Parts and extra info carry over, Participant assignments and Header dates/times do not. |
 | Feedback | Independent note ID, timestamp, route, sanitized page context, optional element context, reporter label, and done state. No foreign keys into demo tables. |
 
 Keep routes thin and put assignment display, unassigned classification, tree validation, and move authorization in domain modules.
@@ -197,14 +197,15 @@ Footer coordinator credits are display text and do not grant access.
 Do not seed unsupported future structures early: U1 has an empty product collection and working feedback; U2 adds Program headers; later slices add their fixtures.
 Full demo events, programs, parts, and participants become available by U8.
 U9–U11 extend those fixtures for parallel Parts, both copy options, unassigned review, and participant-list verification.
-U12 adds a placeholder template only after its open choices are answered.
+U12 adds an owned template saved from a demo Program and reused across Events.
+U13 adds sharing and import coverage with placeholder coordinator accounts in isolated tests; the deployed demo retains its single test user.
 
 ## Ordered vertical slices
 
 Ship in the order below. Each slice includes its migration, API behavior, UI, seed extension, and tests; none is a database-only or UI-only milestone.
 U1 deliberately dedicates the walking skeleton to dev feedback, so feedback is its own early slice and is live on the first dev deploy.
 Program authoring begins in U2, independently of the feedback module.
-Q1–Q5 no longer block these slices; only U12 awaits the new template choices T1–T2.
+Q1–Q5 and T1–T2 are settled; no open product question blocks these slices.
 This is the default delivery order. U10 and U11 can proceed from their listed dependencies independently of U9.
 
 ### 1. U1 — Deployed walking skeleton with isolated dev feedback
@@ -430,30 +431,64 @@ Copies offer `Copy without Participant` and `Copy everything`.
 **Files and proof:** `src/domain/participant-list.ts`, `src/api/participants.ts`, `web/src/participants/`, `test/participant-list.test.ts`, `e2e/event-participants.spec.ts`.
 **Dependencies:** U7 and U8; extend parallel-Part and copy coverage when U9 lands. Q4–Q5 and R8 settle presentation, identity, and scope.
 
-### 12. U12 — Create a Draft Program from a template
+### 12. U12 — Save an owned template and create a Draft Program from it
 
-**Goal and outcome:** The coordinator starts a new Program from an available reusable structure and edits it independently.
+**Goal and outcome:** A coordinator saves a Program as an account-owned template and reuses it across their Events.
 
-**In:** A small template picker, creation preview, title/optional date entry, optional Event destination, and one placeholder template fixture.
-Use the settled carry-over rules once T1–T2 are answered; reuse the existing composer and assignment rules.
-**Out:** Recurrence, occurrence generation, copy-forward, template marketplace, and a template-management editor in this slice.
+**In:** Save-as-template from a Program the coordinator manages, persistent owned templates, an owned-template picker, and a creation preview.
+Require the new Program's title, allow an optional date and Event destination, and reuse the existing composer.
+**Out:** Sharing and importing shared templates (U13), a dedicated template editor, recurrence, occurrence generation, copy-forward, and a template marketplace.
 
 **Acceptance and tests:**
 
-- Select `Example Worship Template`, preview the content to carry over, and create a separate Draft with its own ID and coordinator.
-- Retain the supported nested structure, labels, Detail, Footer, and parallel Parts according to T2.
-  Validate template access, destination coordinator rights, and any Participant references.
-- Require a new title and allow an optional date. Apply the template's settled date/time and Participant carry-over rules visibly in the preview.
-- Create either a standalone Program or one linked to an Event the coordinator may manage. Inherit no publication status or source access grants.
-- Edit the new Program without changing the template or another Program created from it; cancellation and failed creation leave no partial Program.
-- Extend the demo seed with one approved placeholder template while preserving feedback, existing Programs, and coordinator edits.
+- Save a managed Program as `Example Worship Template`, owned by the saving coordinator's account rather than its source Event.
+  Saving leaves the source Program unchanged. Deny saving an inaccessible Program and reading or using another account's private template.
+- Snapshot the supported nested structure, labels, Detail, Footer, and Parts, preserving their order, parallel placement, and independent extra info.
+  Clear all Participant assignments, including direct person/group text, structured names and person details, and shared Participant references.
+  Retain explicit role placeholders without named holders. Extra info alone remains unassigned.
+  Omit Header dates/times from the saved snapshot, including nested mini-program Headers.
+- Preview the copied structure, ordered Parts, and extra info, and show that no Participant assignments or Header dates/times carry over.
+  This applies to the main Header and nested mini-program Headers; require a new Program title and allow its own optional date.
+- Create a separate Draft with its own ID and coordinator, either standalone or in any Event the coordinator may manage.
+  Reuse the same owned template across two different Events; require destination coordinator rights and inherit no publication status or source access grants.
+- Edit the source Program or a created Program without changing the saved template or another Program created from it.
+  Cancellation and failed save/create requests leave no partial template or Program and preserve existing records.
+- Extend the demo seed with an owned template saved from a placeholder Program, preserving feedback, existing Programs, and coordinator edits.
+  Prove repeatable seeding and persistent owned-template readback.
 
-**Files and proof:** `src/domain/templates.ts`, `src/api/templates.ts`, `web/src/templates/`, `src/demo/`, `test/templates.test.ts`, `e2e/templates.spec.ts`.
-**Dependencies:** U8 and U9, including their earlier structure and Participant dependencies; T1–T2 before implementation.
+**Files and proof:** Template ownership/content migration in `src/db/migrations/`, `src/domain/templates.ts`, `src/api/templates.ts`, `web/src/templates/`, Program save-as-template controls in `web/src/programs/`, `src/demo/`, `test/templates.test.ts`, and `e2e/templates.spec.ts`.
+**Dependencies:** U6 for Parts, extra info, and Footer; U7 for Participant forms to strip; U8 for Event destinations and authorization.
+These include U2–U5 Header and structure support. U9 is not required: template reuse copies a snapshot, without moving Parts between Programs or Events.
+
+### 13. U13 — Share templates and import independent owned copies
+
+**Goal and outcome:** A coordinator shares a template for other coordinators to see and import into their own accounts.
+
+**In:** Owner-controlled sharing, a shared-template listing and preview for signed-in coordinators, and copy/import into owned templates.
+Use U12's creation flow only after import.
+**Out:** Linking Programs to another account's template, synchronized copies, shared editing, source Program access grants, anonymous template browsing, and a template marketplace.
+
+**Acceptance and tests:**
+
+- Share an owned template as `Riley Placeholder`; `Alex Placeholder` can see and preview that shared template.
+  Only the owner can change its sharing state; private templates stay inaccessible to other coordinators.
+- Sharing exposes the template snapshot only. It grants no rights to read or edit the source Program, including a Draft, or its Event.
+  Participant assignments removed by U12 remain absent from shared previews and imports.
+- Import the shared template into the recipient's account with a new template ID and independent ownership.
+  Preserve the structure, ordered Parts, and extra info; import neither source access grants nor Participant assignments.
+- Require import before creating a Program from another coordinator's shared template, including through direct API requests.
+  The imported template works across the recipient's Events under U12's destination authorization rules.
+- Changes to either template never update the other, and created Programs remain independent.
+  Turning off sharing prevents new views/imports by other coordinators while existing imports remain usable.
+- Deny unauthorized sharing and import of a private template; cancellation and failed import leave no partial owned copy or changed source.
+  Use isolated tests with placeholder coordinator accounts to prove these boundaries without adding deployed demo users.
+
+**Files and proof:** Template sharing migration in `src/db/migrations/`, `src/domain/templates.ts`, `src/api/templates.ts`, `web/src/templates/`, `test/templates.test.ts`, and `e2e/templates.spec.ts`.
+**Dependencies:** U12 for owned snapshots, Participant stripping, and Program creation, including its U6–U8 dependencies.
 
 ## Settled product decisions
 
-The captain settled Q1–Q3 and Q5; Q4 delegates the list design to this plan.
+The captain settled Q1–Q3, Q5, and T1–T2; Q4 delegates the list design to this plan.
 
 | ID | Decision | Affected work |
 | --- | --- | --- |
@@ -462,6 +497,8 @@ The captain settled Q1–Q3 and Q5; Q4 delegates the list design to this plan.
 | Q3 | An occupied destination keeps all existing Parts and receives the moved Part in parallel. The coordinator decides whether to move another Part. | U6 representation, U9 |
 | Q4 | Use Named Participants grouped by definition, Text assignments per Part, and Awaiting a name for unnamed roles. Retain source locations and offer the same list for standalone Programs. | U11 |
 | Q5 | Share Participant definitions between Programs. Moving or fully copying a reference keeps its identity; offer copying without Participant or copying everything. | U7, U9, U11 |
+| T1 | Any coordinator can save a managed Program as a template owned by their account and usable across all their Events. Sharing makes the template visible to other coordinators, who must copy/import it as an independent template in their own account, never link to it. Sharing grants no rights to the source Program. | U12, U13 |
+| T2 | A new Program copies Parts in order with their extra info, but no Participant assignments. Header dates/times do not carry over; the new Program takes its own title and optional date. | U12 creation preview and carry-over; U13 imports |
 
 Q4 groups only explicit shared identities, so matching names cannot merge different people.
 Text assignments preserve names and groups without requiring individual records or parsing a group string.
@@ -470,13 +507,7 @@ Every group links back to source Parts, so the coordinator can act on the list.
 
 ## Open product questions
 
-Q1–Q5 are settled above and no longer block U2–U11.
-Only these genuine template choices remain for the captain; they block U12, not the earlier slices.
-
-| ID | Question | Affected work |
-| --- | --- | --- |
-| T1 | Who supplies templates? May coordinators save a Program as a template, edit templates, and share them across Events or coordinators? | U12 template availability and management boundary; the small creation slice adds no management editor. |
-| T2 | Which Header dates/times, Parts, and extra info carry into a new Program? Should Participant assignments be cleared, optional, or retained as shared references? | U12 creation preview and carry-over rules |
+None. Q1–Q5 and T1–T2 are settled above.
 
 Platform details are implementation prerequisites rather than product choices: hostname/port availability and OIDC client registration require operator verification.
 Do not replace these unknowns with credential values or assume the corresponding resources already exist.
