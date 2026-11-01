@@ -162,6 +162,23 @@ it('previews destination Parts before moving or copying and acknowledges the com
   expect(screen.getByText(/Part copied to Opening Song/)).toBeDefined();
 });
 
+it('labels same-titled destination Programs with their date and start time', async () => {
+  const eventProgram = { ...program, eventId: 5, title: 'Divine Worship', date: '2026-03-07', startTime: '11:00' };
+  const laterProgram = { ...eventProgram, id: 2, date: '2026-03-14' };
+  const undatedProgram = { ...eventProgram, id: 3, date: null, startTime: null };
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return new Response(JSON.stringify({ programs: [eventProgram, laterProgram, undatedProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    throw Error(`Unexpected request ${input}`);
+  }));
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  const options = within(screen.getByLabelText('Destination Program')).getAllByRole('option').map(option => option.textContent);
+  expect(options).toEqual(['Divine Worship · 2026-03-07 · 11:00', 'Divine Worship · 2026-03-14 · 11:00', 'Divine Worship · Undated']);
+});
+
 it('recovers the move or copy panel after a failed load when the destination stays the same', async () => {
   const eventProgram = { ...program, eventId: 5 };
   let failPrograms = true;
