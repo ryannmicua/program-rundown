@@ -39,6 +39,7 @@ For source development, export the same environment configuration and run `npm r
 The seed requires `APP_ENV=dev`, `DEV_COORDINATOR_ISSUER`, and `DEV_COORDINATOR_SUBJECT`.
 It creates the standalone `Community Gathering` Draft Header, with no date, a 09:00 start, and a 12:00 end.
 It adds ordered Sections and Items, including an unheaded closing Section, literal `*Introit`, multiline Detail, and independent optional times.
+It also creates `Example Published Program`, already published, so its `/p/<id>` reader link works without signing in.
 There are no Events or Participants yet. Nested groups and mini-programs arrive in U5.
 The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers and rundown content, including deliberate removal of all content, plus unrelated Programs, sessions, identity mappings, and feedback.
@@ -61,9 +62,11 @@ Choose **Reapply my entries**, review the Header, then **Save Draft** to save ag
 | --- | --- |
 | `GET /api/programs` | List the signed-in coordinator's standalone Programs. |
 | `POST /api/programs` | Create a Draft with `title` and optional `date`, `startTime`, and `endTime`. |
-| `GET /api/programs/:id` | Read an owned Draft Header, its `version`, and ordered content `nodes`. |
+| `GET /api/programs/:id` | Read an owned Program Header, its `status` (`Draft` or `Published`), its `version`, and ordered content `nodes`. |
 | `PATCH /api/programs/:id` | Edit Header fields with the last read `version`; stale versions return 409 without writing. |
 | `PUT /api/programs/:id/content` | Save `{version, nodes}` atomically; stale versions return 409 without changing content. |
+| `POST /api/programs/:id/publish` | Publish an owned Program; returns its reader `url` (`/p/<id>`). Repeating it is harmless. |
+| `GET /api/public/programs/:id` | Anonymous read of a Published Program's Header and `nodes`; Drafts and missing Programs return 404. |
 
 Dates use `YYYY-MM-DD`; times use `HH:MM`. Use `null` or an empty string to clear an optional field.
 Omitted edit fields retain their values. Blank titles, invalid calendar dates, and malformed times return 400 with field errors.
@@ -84,6 +87,13 @@ Content nodes have stable `id`, `parentId`, `kind`, `label`, `detail`, `startTim
 Sections have `kind: "section"`, `parentId: null`, and empty Detail. Items require a label and their Section's ID as `parentId`.
 Array order determines sibling order. Content times use `HH:MM` or `null`.
 A rundown holds up to 300 nodes; labels hold up to 200 characters, Item Detail up to 10000, and all labels and Detail together up to 60000.
+
+## Publish, share, and print
+
+Save the Header and rundown, then choose **Publish Program**. Publishing stays disabled while either has unsaved changes.
+The editor then shows the reader link, `/p/<id>`. Anyone with the link can read the Program without signing in; there is no public directory.
+Later saves replace the content at the same link, without version history or another publish step.
+Readers choose **Print** or use browser printing; the printed listing omits editor and feedback controls.
 
 ## Run the container
 

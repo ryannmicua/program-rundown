@@ -25,4 +25,3 @@ export function publicationRoutes(db: DatabaseSync, coordinator: RequestHandler)
   });
   return router;
 }
-
