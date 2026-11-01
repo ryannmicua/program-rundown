@@ -39,7 +39,8 @@ export function participantRoutes(db: DatabaseSync, coordinator: RequestHandler)
       UNION ALL SELECT n.program_id,n.id,n.parent_id,n.kind,n.label,tree.sort_path || '.' || printf('%08d',n.position) FROM content_nodes n JOIN tree ON n.program_id=tree.program_id AND n.parent_id=tree.id
     )
     SELECT p.program_id AS programId, pr.title AS programTitle, p.id AS partId, p.target_kind AS targetKind, p.target_id AS targetId,
-      COALESCE(t.label, f.title, p.target_id) AS targetLabel, f.title AS footerTitle, p.kind, p.value, p.role, p.name,
+      CASE WHEN p.target_kind='footer' THEN COALESCE(NULLIF(f.title,''),'Untitled role') ELSE COALESCE(NULLIF(t.label,''), CASE t.kind WHEN 'section' THEN 'Unheaded Section' WHEN 'item' THEN 'Untitled Item' ELSE 'Untitled mini-program' END) END AS targetLabel,
+      CASE WHEN p.target_kind='footer' THEN COALESCE(NULLIF(f.title,''),'Untitled role') END AS footerTitle, p.kind, p.value, p.role, p.name,
       p.participant_id AS participantId, p.reference_mode AS referenceMode, d.role AS participantRole, d.name AS participantName,
       d.honorific, d.position, d.organization, d.subtitle, pr.event_position AS eventPosition,
       CASE WHEN p.target_kind='footer' THEN printf('~%08d',f.position) ELSE t.sort_path END AS targetOrder, p.position AS partPosition

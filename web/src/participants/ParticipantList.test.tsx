@@ -8,13 +8,18 @@ it('shows Event assignments, filters by Program, and gives an empty view guidanc
   const response = (value: unknown) => ({ ok: true, json: async () => value });
   const fetcher = vi.fn()
     .mockResolvedValueOnce(response({ programs: [{ id: 2, title: 'Divine Worship Placeholder' }], namedParticipants: [{ participantId: 1, role: 'Speaker', name: 'Alex Placeholder', honorific: '', position: '', organization: '', subtitle: '', assignments: [{ programId: 2, programTitle: 'Divine Worship Placeholder', partId: 'part-one', targetLabel: 'Reading', targetKind: 'item', url: '/programs/2#part-part-one' }] }], textAssignments: [], awaitingName: [] }))
-    .mockResolvedValueOnce(response({ programs: [{ id: 2, title: 'Divine Worship Placeholder' }], namedParticipants: [], textAssignments: [], awaitingName: [] }));
+    .mockResolvedValue(response({ programs: [{ id: 2, title: 'Divine Worship Placeholder' }], namedParticipants: [], textAssignments: [], awaitingName: [] }));
   vi.stubGlobal('fetch', fetcher);
   render(<ParticipantList/>);
   expect(await screen.findByRole('heading', { name: 'Alex Placeholder' })).toBeDefined();
   fireEvent.change(screen.getByLabelText('Filter by Program'), { target: { value: '2' } });
   await waitFor(() => expect(fetcher).toHaveBeenCalledWith('/api/events/42/participants?programId=2'));
-  await screen.findByText('No Participant assignments yet. Add assignments to Parts to see them here.');
+  await screen.findByText('No assignments in this Program.', { exact: false });
+  expect(screen.queryByText('No Participant assignments yet. Add assignments to Parts to see them here.')).toBeNull();
+  expect(screen.queryByText('No named participants in this view.')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Show all Event Programs' }));
+  await waitFor(() => expect(fetcher).toHaveBeenLastCalledWith('/api/events/42/participants'));
+  expect(await screen.findByText('No Participant assignments yet. Add assignments to Parts to see them here.')).toBeDefined();
 });
 
 it('keeps the session recovery on retry and loads assignments once the session returns', async () => {

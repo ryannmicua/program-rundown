@@ -22,7 +22,7 @@ export function ParticipantList() {
     {eventMatch && <label htmlFor="participant-program-filter">Filter by Program <select id="participant-program-filter" value={filter} onChange={event => setFilter(event.target.value)}><option value="">All Event Programs</option>{data?.programs.map(program => <option value={program.id} key={program.id}>{program.title}</option>)}</select></label>}
     {loading && <><p role="status">{slow ? 'Still loading assignments… They will appear as soon as they arrive.' : 'Loading Participants…'}</p>{slow && <div className="loading-progress" aria-hidden="true"/>}</>}
     {error && <p role="alert">{error}{error.includes('session ended') && <> <a href="/auth/login" target="_blank" rel="noreferrer">Sign in again</a></>} <button onClick={retry}>Try again</button></p>}
-    {!loading && !error && groups?.length === 0 && <p>No Participant assignments yet. Add assignments to Parts to see them here.</p>}
-    {!loading && !error && <>{renderGroup('named', 'Named Participants')}{renderGroup('text', 'Text assignments')}{renderGroup('waiting', 'Awaiting a name')}</>}
+    {!loading && !error && groups?.length === 0 && (filter ? <p>No assignments in this Program. <button onClick={() => setFilter('')}>Show all Event Programs</button></p> : <p>No Participant assignments yet. Add assignments to Parts to see them here.</p>)}
+    {!loading && !error && !!groups?.length && <>{renderGroup('named', 'Named Participants')}{renderGroup('text', 'Text assignments')}{renderGroup('waiting', 'Awaiting a name')}</>}
   </section>;
 }

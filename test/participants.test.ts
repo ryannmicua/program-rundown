@@ -107,7 +107,7 @@ it('lists Footer roles after content, keeps same-name definitions apart, groups 
     const event = (await (await send('/api/events', { name: 'Gate Placeholder' }, 'POST')).json()).event;
     const program = (await (await send('/api/programs', { title: 'Footer Placeholder' }, 'POST')).json()).program;
     await send(`/api/events/${event.id}/programs`, { programIds: [program.id] }, 'PUT');
-    expect((await send(`/api/programs/${program.id}/content`, { version: 1, nodes: [{ id: 'section', parentId: null, kind: 'section', label: 'Worship Placeholder', detail: '', startTime: null, endTime: null }, { id: 'shared', parentId: 'section', kind: 'item', label: 'Opening Placeholder', detail: '', startTime: null, endTime: null }] }, 'PUT')).status).toBe(200);
+    expect((await send(`/api/programs/${program.id}/content`, { version: 1, nodes: [{ id: 'section', parentId: null, kind: 'section', label: 'Worship Placeholder', detail: '', startTime: null, endTime: null }, { id: 'shared', parentId: 'section', kind: 'item', label: 'Opening Placeholder', detail: '', startTime: null, endTime: null }, { id: 'unheaded', parentId: null, kind: 'section', label: '', detail: '', startTime: null, endTime: null }] }, 'PUT')).status).toBe(200);
     const define = async (name: string) => (await (await send('/api/participants', { role: 'Reader', name, honorific: '', position: '', organization: '', subtitle: '' }, 'POST')).json()).participant;
     const first = await define('Sam Placeholder'); const twin = await define('Sam Placeholder'); const unnamed = await define('');
     const part = (id: string, targetId: string, targetKind: string, kind: string, extras = {}) => ({ id, targetId, targetKind, kind, value: '', role: '', name: '', extraInfo: '', intentionallyNotListed: false, ...extras });
@@ -117,11 +117,13 @@ it('lists Footer roles after content, keeps same-name definitions apart, groups 
       part('twin-reader', 'shared', 'item', 'reference', { participantId: twin.id, referenceMode: 'name' }),
       part('unnamed-reader', 'shared', 'item', 'reference', { participantId: unnamed.id, referenceMode: 'role' }),
       part('direct-role', 'shared', 'item', 'role', { role: 'Usher Placeholder' }),
+      part('unheaded-text', 'unheaded', 'section', 'text', { value: 'Choir Placeholder' }),
     ], footer: [{ id: 'shared', title: 'Pianist Placeholder' }] }, 'PUT');
     expect(saved.status, await saved.text()).toBe(200);
     const list = await (await send(`/api/events/${event.id}/participants`)).json();
     expect(list.namedParticipants.map((item: { participantId: number }) => item.participantId)).toEqual([first.id, twin.id]);
     expect(list.namedParticipants[0].assignments.map((item: { partId: string; targetLabel: string; footerTitle: string | null }) => [item.partId, item.targetLabel, item.footerTitle])).toEqual([['item-reader', 'Opening Placeholder', null], ['footer-reader', 'Pianist Placeholder', 'Pianist Placeholder']]);
+    expect(list.textAssignments[0].assignments[0].targetLabel).toBe('Unheaded Section');
     expect(list.awaitingName).toEqual([expect.objectContaining({ participantId: unnamed.id, role: 'Reader' }), expect.objectContaining({ role: 'Usher Placeholder' })]);
     expect(list.awaitingName[1].participantId).toBeUndefined();
 
