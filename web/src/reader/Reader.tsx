@@ -4,7 +4,6 @@ import type { ContentNode } from '../../../src/domain/content.js';
 import { ProgramRenderer } from '../programs/ProgramRenderer.js';
 
 type Listing = { program: Program; nodes: ContentNode[] };
-const requestTimeoutMs = 15_000;
 
 export function Reader() {
   const id = /^\/p\/(\d+)$/.exec(window.location.pathname)?.[1];
@@ -17,14 +16,13 @@ export function Reader() {
     let active = true;
     const controller = new AbortController();
     const timer = window.setTimeout(() => { if (active) setSlow(true); }, 1800);
-    const requestTimer = window.setTimeout(() => controller.abort(), requestTimeoutMs);
     fetch(`/api/public/programs/${id}`, { signal: controller.signal }).then(async response => {
       if (response.status === 404) throw new Error('missing');
       if (!response.ok) throw new Error('network');
       return response.json() as Promise<Listing>;
-    }).then(data => { if (active) { window.clearTimeout(timer); window.clearTimeout(requestTimer); setSlow(false); setListing(data); setState('loading'); } })
-      .catch(error => { if (active) { window.clearTimeout(timer); window.clearTimeout(requestTimer); setSlow(false); setState(error.message === 'missing' ? 'missing' : window.navigator.onLine ? 'error' : 'offline'); } });
-    return () => { active = false; window.clearTimeout(timer); window.clearTimeout(requestTimer); controller.abort(); };
+    }).then(data => { if (active) { window.clearTimeout(timer); setSlow(false); setListing(data); setState('loading'); } })
+      .catch(error => { if (active) { window.clearTimeout(timer); setSlow(false); setState(error.message === 'missing' ? 'missing' : window.navigator.onLine ? 'error' : 'offline'); } });
+    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
   }, [id, attempt]);
   function retry() { setState('loading'); setAttempt(count => count + 1); }
   if (state === 'loading' && !listing) return <main><p role="status">{slow ? 'Still loading this Program… Your page will appear as soon as it arrives.' : 'Loading published Program…'}</p>{slow && <div className="loading-progress" aria-hidden="true"/>}</main>;
