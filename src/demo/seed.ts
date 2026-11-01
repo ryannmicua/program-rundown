@@ -133,6 +133,33 @@ export function seedProduct(env = process.env) {
       const result = db.prepare("INSERT INTO program_templates (owner_id, name, snapshot) VALUES (?, 'Example Worship Template', ?)").run(identity.id, JSON.stringify(createTemplateSnapshot(readContent(db, source.id), currentParts.parts as unknown as DirectPart[], currentParts.footer)));
       db.prepare('INSERT INTO demo_template_seeds (owner_id, template_id) VALUES (?, ?)').run(identity.id, Number(result.lastInsertRowid));
     }
+    const speakerDefinition = db.prepare("SELECT id FROM participants WHERE seed_key = 'demo-speaker'").get() as { id: number } | undefined;
+    for (const seed of [
+      { key: 'demo-divine-worship', sourceId: 'event-demo-divine-worship-opening', targetId: 'event-demo-divine-worship-main', reference: true },
+      { key: 'demo-sabbath-school', sourceId: 'event-demo-sabbath-school-opening', targetId: 'event-demo-sabbath-school-main', reference: false },
+      { key: 'demo-conference-session-one', sourceId: 'event-demo-conference-session-one-opening', targetId: 'event-demo-conference-session-one-main', reference: false },
+    ]) {
+      const seededProgram = db.prepare('SELECT id FROM programs WHERE seed_key = ?').get(seed.key) as { id: number } | undefined;
+      if (!seededProgram || db.prepare('SELECT 1 FROM demo_move_part_seeds WHERE program_id = ?').get(seededProgram.id)) continue;
+      const hasSource = db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ? AND id = ?').get(seededProgram.id, seed.sourceId);
+      const hasTarget = db.prepare('SELECT 1 FROM content_nodes WHERE program_id = ? AND id = ?').get(seededProgram.id, seed.targetId);
+      let added = false;
+      if (hasSource && !db.prepare('SELECT 1 FROM parts WHERE program_id = ? AND target_id = ?').get(seededProgram.id, seed.sourceId)) {
+        if (seed.reference && speakerDefinition) {
+          db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, extra_info, position, participant_id, reference_mode) VALUES (?, 'demo-move-speaker', ?, 'item', 'reference', 'Placeholder notes follow the shared definition.', (SELECT COALESCE(MAX(position) + 1, 0) FROM parts WHERE program_id = ?), ?, 'name')").run(seededProgram.id, seed.sourceId, seededProgram.id, speakerDefinition.id);
+        } else {
+          db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, role, name, extra_info, position) VALUES (?, 'demo-move-role', ?, 'item', 'structured', 'Speaker', 'Alex Placeholder', 'A placeholder assignment ready to move or copy.', (SELECT COALESCE(MAX(position) + 1, 0) FROM parts WHERE program_id = ?))").run(seededProgram.id, seed.sourceId, seededProgram.id);
+        }
+        added = true;
+      }
+      if (hasTarget && !db.prepare('SELECT 1 FROM parts WHERE program_id = ? AND target_id = ?').get(seededProgram.id, seed.targetId)) {
+        db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, value, extra_info, position) VALUES (?, 'demo-parallel-congregation', ?, 'item', 'text', 'Congregation Placeholder', 'Existing assignment stays when another Part arrives.', (SELECT COALESCE(MAX(position) + 1, 0) FROM parts WHERE program_id = ?))").run(seededProgram.id, seed.targetId, seededProgram.id);
+        db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, role, extra_info, position) VALUES (?, 'demo-parallel-role', ?, 'item', 'role', 'Music Leader Placeholder', 'A parallel Part with independent notes.', (SELECT COALESCE(MAX(position) + 1, 0) FROM parts WHERE program_id = ?))").run(seededProgram.id, seed.targetId, seededProgram.id);
+        added = true;
+      }
+      if (added) db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(seededProgram.id);
+      db.prepare('INSERT INTO demo_move_part_seeds VALUES (?)').run(seededProgram.id);
+    }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   finally { db.close(); }

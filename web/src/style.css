@@ -96,6 +96,11 @@ footer { display: flex; gap: 2rem; padding: 2rem 5vw; border-top: 1px solid #d8d
 .reader-listing .preview-section li .note-text { margin: .35rem auto 0; }
 .part-fields, .part-target { border: 1px solid #d6ded4; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
 .part-fields { display: grid; gap: .75rem; }
+.part-transfer { margin-top: 1rem; padding: 1rem; border: 1px solid #cbd8cf; border-radius: 8px; background: #f7faf6; }
+.part-transfer h4 { margin-top: 0; }
+.part-transfer label { display: block; margin: .75rem 0; }
+.part-transfer select { display: block; width: 100%; margin-top: .35rem; }
+.part-transfer button { margin: .3rem .4rem .3rem 0; }
 .part-fields label, .part-target > label { display: grid; gap: .35rem; font-weight: 600; }
 .part-fields input:not([type=checkbox]), .part-fields select, .part-fields textarea, .part-target input { min-width: 0; width: 100%; padding: .6rem; border: 1px solid #8ca99e; border-radius: 6px; font: inherit; }
 .part-fields textarea { min-height: 4rem; }

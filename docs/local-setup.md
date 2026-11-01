@@ -44,6 +44,7 @@ That Program has the subtitle `A day of gratitude` and a nested rundown: a `feat
 `Community Gathering` includes an Alex Placeholder definition reused in another Program, direct Parts, an intentionally unlisted Part, and an ordered `Pianist` Footer role.
 It also creates two date-grouped Events with placeholder rundowns: `Sabbath` (Vesper, Sabbath School, Divine Worship, and AY across two weeks, some published) and `Example Conference` (two dated sessions plus an undated `Conference Welcome`).
 It saves `Example Worship Template` from `Community Gathering` once for the configured coordinator.
+Some Event Programs have a placeholder Part ready to move or copy, plus an Item that already holds two parallel Parts.
 The seed uses placeholder names only and never opens feedback storage.
 The configured coordinator owns every demo Program and Event and can open it immediately after sign-in, including when the seed runs before first sign-in.
 Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, Participant definitions, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
@@ -138,6 +139,18 @@ Later edits to the source Program, the template, or a created Draft do not chang
 | `POST /api/templates` | Save a template with `name` and the `programId` of a Program you manage. |
 | `GET /api/templates/:id` | Read an owned template's `nodes`, `parts`, and `footer` snapshot; other accounts' templates return 404. |
 | `POST /api/templates/:id/programs` | Create a Draft from an owned template with `title` and optional `date` and `eventId`. |
+
+## Move or copy a Part
+
+Save any Parts changes first, then choose **Move or copy Part** on a Part.
+Pick a **Destination Program** - the current Program or another Program linked to the same Event - and an Item, block, or Footer role.
+The panel lists Parts already at that destination; they always stay, and the moved or copied Part is added alongside them.
+Choose **Move selected Part here**, **Copy without Participant**, or **Copy everything**.
+Copy without Participant keeps Part extra info and any role, clearing names and Participant references; Copy everything keeps the assignment and any shared Participant reference.
+Item labels, Detail, and order never move. Standalone Programs and Programs in other Events are not offered.
+
+`POST /api/programs/:id/parts/:partId/transfer` takes `destinationProgramId`, `destinationTargetId`, `destinationTargetKind`, `operation` (`move` or `copy`), `copyMode` for copies (`without-participant` or `everything`), and both Programs' `sourceVersion` and `destinationVersion`.
+It changes both Programs atomically, returns 403 across Events or standalone Programs, 409 when either Program changed, and 400 when the destination already has 600 Parts.
 
 ## Run the container
 

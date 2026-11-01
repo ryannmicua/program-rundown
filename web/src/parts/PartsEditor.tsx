@@ -33,6 +33,18 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   const [definitionsError, setDefinitionsError] = useState('');
   const [definitionQuery, setDefinitionQuery] = useState('');
   const [selectionQueries, setSelectionQueries] = useState<Record<string, string>>({});
+  const [transferPartId, setTransferPartId] = useState('');
+  const [transferPrograms, setTransferPrograms] = useState<(Program & { eventId?: number | null })[]>([]);
+  const [transferProgramId, setTransferProgramId] = useState(program.id);
+  const [transferVersion, setTransferVersion] = useState(0);
+  const [transferLoad, setTransferLoad] = useState(0);
+  const [transferTargets, setTransferTargets] = useState<{ id: string; kind: DirectPart['targetKind']; label: string; parts: DirectPart[] }[]>([]);
+  const [transferTarget, setTransferTarget] = useState('');
+  const [transferState, setTransferState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [transferSlow, setTransferSlow] = useState(false);
+  const [transferError, setTransferError] = useState('');
+  const [transferMessage, setTransferMessage] = useState('');
   const definitionDraftKey = `program-rundown:participant-draft:${program.id}`;
   const [definitionDraft, setDefinitionDraft] = useState<ParticipantFields>(() => { try { return JSON.parse(window.sessionStorage.getItem(definitionDraftKey) || 'null')?.fields || emptyParticipant; } catch { return emptyParticipant; } });
   const [editingDefinition, setEditingDefinition] = useState<number | undefined>(() => { try { return JSON.parse(window.sessionStorage.getItem(definitionDraftKey) || 'null')?.id; } catch { return undefined; } });
@@ -52,6 +64,22 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     finally { window.clearTimeout(slowTimer); setDefinitionsSlow(false); }
   }
   useEffect(() => { void loadDefinitions(); }, []);
+  function openTransfer(partId: string) {
+    setTransferPartId(partId); setTransferProgramId(program.id); setTransferMessage(''); setTransferLoad(count => count + 1);
+  }
+  useEffect(() => {
+    if (!transferPartId) return;
+    let current = true;
+    const slowTimer = window.setTimeout(() => setTransferSlow(true), 1800);
+    setTransferSlow(false);
+    setTransferState('loading'); setTransferError(''); setTransferTargets([]); setTransferTarget('');
+    const load = async (url: string) => { const response = await fetch(url); const data = await response.json(); if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to choose a destination.' : data.error || 'Could not load Programs or destination.'); return data; };
+    Promise.all([load('/api/programs'), load(`/api/programs/${transferProgramId}`)]).then(([list, data]) => {
+      const targets = [...(data.nodes || []).map((node: ContentNode) => ({ id: node.id, kind: node.kind as DirectPart['targetKind'], label: node.label || (node.kind === 'section' ? 'Unheaded Section' : node.kind === 'item' ? 'Untitled Item' : 'Untitled mini-program') })), ...(data.footer || []).map((role: FooterRole) => ({ id: role.id, kind: 'footer' as const, label: `Footer: ${role.title}` }))].map(target => ({ ...target, parts: (data.parts || []).filter((part: DirectPart) => part.targetId === target.id && part.targetKind === target.kind) }));
+      if (current) { setTransferPrograms(list.programs || []); setTransferVersion(data.program.version); setTransferTargets(targets); setTransferTarget(targets[0] ? `${targets[0].kind}:${targets[0].id}` : ''); setTransferState('ready'); }
+    }).catch(error => { if (current) { setTransferError(window.navigator.onLine ? (error instanceof Error ? error.message : 'Could not load Programs or destination.') : 'You are offline. Reconnect, then reload Programs and destination.'); setTransferState('error'); } }).finally(() => window.clearTimeout(slowTimer));
+    return () => { current = false; window.clearTimeout(slowTimer); };
+  }, [transferPartId, transferProgramId, transferLoad]);
   useEffect(() => { try { if (Object.values(definitionDraft).some(Boolean)) window.sessionStorage.setItem(definitionDraftKey, JSON.stringify({ id: editingDefinition, fields: definitionDraft })); else window.sessionStorage.removeItem(definitionDraftKey); } catch { /* keep the form available in this page */ } }, [definitionDraft, editingDefinition, definitionDraftKey]);
   useEffect(() => { try { if (dirty && loadedParts.current === initialParts) window.sessionStorage.setItem(draftKey, JSON.stringify({ version: program.version, parts, footer })); } catch { /* current page state remains available */ } }, [parts, footer, dirty, draftKey, program.version]);
   useEffect(() => {
@@ -108,6 +136,25 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     } catch { setError(window.navigator.onLine ? 'Could not connect. Your Parts are kept. Try again.' : 'You are offline. Your Parts are kept. Reconnect, then try again.'); }
     finally { window.clearTimeout(slowTimer); setSlow(false); setBusy(false); }
   }
+  async function transfer(operation: 'move' | 'copy', copyMode?: 'without-participant' | 'everything') {
+    const target = transferTargets.find(item => `${item.kind}:${item.id}` === transferTarget);
+    const sourcePart = parts.find(item => item.id === transferPartId);
+    const targetProgram = transferPrograms.find(item => item.id === transferProgramId);
+    if (!target || !sourcePart || !targetProgram || dirty) return;
+    setTransferBusy(true); setTransferSlow(false); setTransferError(''); setTransferMessage('');
+    const slowTimer = window.setTimeout(() => setTransferSlow(true), 1800);
+    try {
+      const response = await fetch(`/api/programs/${program.id}/parts/${encodeURIComponent(sourcePart.id)}/transfer`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ destinationProgramId: targetProgram.id, destinationTargetId: target.id, destinationTargetKind: target.kind, operation, copyMode, sourceVersion: program.version, destinationVersion: targetProgram.id === program.id ? program.version : transferVersion }) });
+      const data = await response.json();
+      if (!response.ok) { setTransferError(response.status === 401 ? 'Your session ended. Sign in again, then reload both Programs.' : response.status === 403 ? data.error || 'This destination is outside the Event you can manage.' : data.error || 'Could not complete the Part operation. Reload and try again.'); return; }
+      const updated = data.source;
+      setParts(updated.parts); setFooter(updated.footer); setDirty(false); clearDraft(); onSaved({ ...program, version: updated.version }, updated.parts, updated.footer);
+      const action = operation === 'move' ? 'moved' : 'copied';
+      setTransferMessage(`Part ${action} to ${target.label}. Review the updated Program${targetProgram.id === program.id ? '' : `, then open ${targetProgram.title} to review the destination`}.`);
+      setTransferPartId('');
+    } catch { setTransferError(window.navigator.onLine ? 'Could not confirm the result. Reload both Programs before trying again.' : 'You are offline. Reconnect and reload both Programs to confirm the result before trying again.'); }
+    finally { window.clearTimeout(slowTimer); setTransferBusy(false); setTransferSlow(false); }
+  }
   const partEditor = (targetId: string, targetKind: DirectPart['targetKind']) => <div className="part-list">
     {parts.filter(part => part.targetId === targetId && part.targetKind === targetKind).map(part => <fieldset className="part-fields" key={part.id}>
       <legend>Participant</legend>
@@ -119,6 +166,23 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
       <label>Part extra info (optional)<textarea aria-label="Part extra info" maxLength={2000} value={part.extraInfo} onChange={event => editPart(part.id, { extraInfo: event.target.value })}/></label>
       <label><input type="checkbox" checked={part.intentionallyNotListed} onChange={event => editPart(part.id, { intentionallyNotListed: event.target.checked })}/> Intentionally not listed</label>
       <button type="button" onClick={() => { setParts(current => current.filter(entry => entry.id !== part.id)); setDirty(true); }}>Remove participant</button>
+      <button type="button" disabled={dirty || busy || transferBusy} onClick={() => { if (transferPartId === part.id) setTransferPartId(''); else openTransfer(part.id); }}>{transferPartId === part.id ? 'Close move or copy' : 'Move or copy Part'}</button>
+      {transferPartId === part.id && <section className="part-transfer" aria-label={`Move or copy ${participant(part) || 'blank Part'}`}>
+        <h4>Move or copy this Part</h4>
+        {dirty && <p>Save your Parts changes before moving or copying.</p>}
+        {transferState === 'loading' && <><p role="status">{transferSlow ? 'Still loading the destination… waiting for saved Parts.' : 'Loading destination…'}</p>{transferSlow && <div className="loading-progress" aria-label="Loading destination"/>}</>}
+        {transferState === 'ready' && <>
+          <label>Destination Program<select aria-label="Destination Program" value={transferProgramId} onChange={event => setTransferProgramId(Number(event.target.value))}>{transferPrograms.filter(candidate => candidate.id === program.id || (program.eventId != null && candidate.eventId === program.eventId)).map(candidate => <option key={candidate.id} value={candidate.id}>{[candidate.title, candidate.date || 'Undated', candidate.startTime].filter(Boolean).join(' · ')}</option>)}</select></label>
+          <label>Destination Item, block, or Footer role<select aria-label="Destination Item, block, or Footer role" value={transferTarget} onChange={event => setTransferTarget(event.target.value)}>{transferTargets.map(target => <option key={`${target.kind}:${target.id}`} value={`${target.kind}:${target.id}`}>{target.label}</option>)}</select></label>
+          {!transferTargets.length && <p>This Program has no destination yet. Add an Item, block, or Footer role first.</p>}
+          {transferTargets.find(target => `${target.kind}:${target.id}` === transferTarget)?.parts.length ? <div><p>Existing destination Parts will stay in place:</p><ul>{transferTargets.find(target => `${target.kind}:${target.id}` === transferTarget)!.parts.map(existing => <li key={existing.id}>{participant(existing) || 'Blank participant'}{existing.extraInfo && ` — ${existing.extraInfo}`}</li>)}</ul></div> : <p>This destination has no Parts yet.</p>}
+          <button type="button" disabled={dirty || transferBusy || !transferTarget} onClick={() => void transfer('move')}>{transferBusy ? transferSlow ? 'Still moving or copying…' : 'Moving or copying…' : 'Move selected Part here'}</button>
+          <button type="button" disabled={dirty || transferBusy || !transferTarget} onClick={() => void transfer('copy', 'without-participant')}>Copy without Participant</button>
+          <button type="button" disabled={dirty || transferBusy || !transferTarget} onClick={() => void transfer('copy', 'everything')}>Copy everything</button>
+        </>}
+        {transferError && <div role="alert"><p>{transferError}</p><button type="button" disabled={transferBusy} onClick={() => { void reload(); openTransfer(part.id); }}>Reload Programs and destination</button></div>}
+        {transferBusy && transferSlow && <><p role="status">The saved Parts stay in place until the operation finishes.</p><div className="loading-progress" aria-label="Part operation in progress"/></>}
+      </section>}
     </fieldset>)}
     <button type="button" onClick={() => addPart(targetId, targetKind)}>Add participant</button>
     {definitions.length > 0 && <button type="button" onClick={() => { setParts(current => [...current, { ...makePart(targetId, targetKind), kind: 'reference', participantId: definitions[0].id, referenceMode: 'name', participant: definitions[0] }]); setDirty(true); }}>Reuse a saved Participant</button>}
@@ -159,6 +223,7 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
     </section>
     {error && <div role="alert"><p>{error}</p>{conflict ? <button type="button" disabled={busy} onClick={() => void reload()}>Reload saved Program</button> : dirty && !invalidId && <button type="button" disabled={busy} onClick={() => void save()}>Try saving Parts again</button>}{error.startsWith('Your session ended') && <> <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a></>}</div>}
     {message && <p role="status">{message}</p>}
+    {transferMessage && <p role="status">{transferMessage}</p>}
     {kept && <aside className="kept-header"><h3>Your unsaved Parts</h3><p>This Program changed elsewhere. The saved Parts and Footer roles are shown below. Review them, then reapply your entries if you still want them.</p><pre className="note-text">{keptSummary(kept)}</pre>{!conflict && <button type="button" disabled={busy} onClick={() => { setParts(onTargets(kept.parts)); setFooter(kept.footer); setKept(undefined); setDirty(true); setMessage(''); }}>Reapply my Parts entries</button>}<button type="button" disabled={busy} onClick={() => { setKept(undefined); if (!dirty) clearDraft(); }}>Discard my kept entries</button></aside>}
     <fieldset className="parts-form" disabled={busy || conflict}>
     <legend className="sr-only">Participants and Footer roles</legend>

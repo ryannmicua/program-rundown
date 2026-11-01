@@ -136,3 +136,66 @@ it('explains that only the creator can edit a shared Participant definition', as
   fireEvent.click(screen.getByRole('button', { name: 'Save Participant changes' }));
   expect((await screen.findByRole('alert')).textContent).toBe(refusal);
 });
+
+it('previews destination Parts before moving or copying and acknowledges the completed operation', async () => {
+  const eventProgram = { ...program, eventId: 5 };
+  const destinationProgram = { ...eventProgram, id: 2, title: 'Sabbath School' };
+  const fetcher = vi.fn(async (input: string, init?: RequestInit) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return new Response(JSON.stringify({ programs: [eventProgram, destinationProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    if (input === '/api/programs/2') return new Response(JSON.stringify({ program: destinationProgram, nodes, parts: [{ ...leader, id: 'existing', value: 'Congregation' }], footer: [] }));
+    if (input.endsWith('/transfer')) return new Response(JSON.stringify({ source: { parts: [leader], footer: [], version: 2 }, destination: { parts: [leader], footer: [], version: 2 } }));
+    throw Error(`Unexpected request ${input} ${init?.method || ''}`);
+  });
+  vi.stubGlobal('fetch', fetcher);
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  fireEvent.change(screen.getByLabelText('Destination Program'), { target: { value: '2' } });
+  await screen.findByText('Existing destination Parts will stay in place:');
+  expect(screen.getByText('Song Leader')).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy everything' }));
+  await screen.findByRole('status');
+  const request = fetcher.mock.calls.find(([input]) => input.endsWith('/transfer'))!;
+  expect(JSON.parse(String(request[1]?.body))).toMatchObject({ destinationProgramId: 2, operation: 'copy', copyMode: 'everything' });
+  expect(screen.getByText(/Part copied to Opening Song/)).toBeDefined();
+});
+
+it('labels same-titled destination Programs with their date and start time', async () => {
+  const eventProgram = { ...program, eventId: 5, title: 'Divine Worship', date: '2026-03-07', startTime: '11:00' };
+  const laterProgram = { ...eventProgram, id: 2, date: '2026-03-14' };
+  const undatedProgram = { ...eventProgram, id: 3, date: null, startTime: null };
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return new Response(JSON.stringify({ programs: [eventProgram, laterProgram, undatedProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    throw Error(`Unexpected request ${input}`);
+  }));
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  const options = within(screen.getByLabelText('Destination Program')).getAllByRole('option').map(option => option.textContent);
+  expect(options).toEqual(['Divine Worship · 2026-03-07 · 11:00', 'Divine Worship · 2026-03-14 · 11:00', 'Divine Worship · Undated']);
+});
+
+it('recovers the move or copy panel after a failed load when the destination stays the same', async () => {
+  const eventProgram = { ...program, eventId: 5 };
+  let failPrograms = true;
+  const reload = vi.fn(async () => {});
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return failPrograms ? new Response(JSON.stringify({ error: 'Programs are unavailable right now.' }), { status: 500 }) : new Response(JSON.stringify({ programs: [eventProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    throw Error(`Unexpected request ${input}`);
+  }));
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [], reload }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Programs are unavailable right now.');
+  expect(screen.getAllByRole('alert')).toHaveLength(1);
+  failPrograms = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Reload Programs and destination' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(reload).toHaveBeenCalled();
+});
