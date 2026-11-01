@@ -45,7 +45,7 @@ export function Templates() {
     try {
       const response = await fetch(`/api/templates/${item.id}/sharing`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shared: !item.shared }) });
       const data = await response.json();
-      if (!response.ok) throw Error(data.error || 'Could not update sharing. Try again.');
+      if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to continue.' : response.status === 403 ? 'Coordinator access is required. Sign in with an authorized coordinator account.' : data.error || 'Could not update sharing. Try again.');
       setTemplates(current => current?.map(candidate => candidate.id === item.id ? { ...candidate, shared: data.shared } : candidate));
       setError('');
     } catch (e) { setError(window.navigator.onLine ? `${(e as Error).message || 'Could not update sharing.'} Try again.` : 'You are offline. Reconnect, then try again.'); }
@@ -56,7 +56,7 @@ export function Templates() {
     try {
       const response = await fetch(`/api/templates/shared/${item.id}/import`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
       const data = await response.json();
-      if (!response.ok) throw Error(data.error || 'Could not import this template. Try again.');
+      if (!response.ok) throw Error(response.status === 401 ? 'Your session ended. Sign in again to continue.' : response.status === 403 ? 'Coordinator access is required. Sign in with an authorized coordinator account.' : data.error || 'Could not import this template. Try again.');
       window.location.assign(`/templates/${data.template.id}/use`);
     } catch (e) { setError(window.navigator.onLine ? `${(e as Error).message || 'Could not import this template.'} Try again.` : 'You are offline. Reconnect, then try again.'); setBusy(false); }
   }

@@ -151,3 +151,20 @@ it('explains an empty shared template list', async () => {
   render(<Templates/>);
   expect(await screen.findByText(/No templates have been shared with you yet/)).toBeDefined();
 });
+
+it('offers sign-in recovery when the session expires during import or sharing', async () => {
+  history.replaceState({}, '', '/templates');
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    if (input === '/api/templates') return { ok: true, json: async () => ({ templates: [{ id: 7, name: 'Gathering Template', shared: 0 }], sharedTemplates: [{ id: 5, name: 'Shared Placeholder' }] }) };
+    if (input === '/api/events') return { ok: true, json: async () => ({ events: [] }) };
+    if (input === '/api/templates/7/sharing') return { ok: false, status: 403, json: async () => ({ error: 'Dev tester access required.' }) };
+    return { ok: false, status: 401, json: async () => ({ error: 'Sign in to continue.' }) };
+  }));
+  render(<Templates/>);
+  fireEvent.click(await screen.findByRole('button', { name: 'Import a copy' }));
+  expect((await screen.findByRole('alert')).textContent).toContain('Your session ended. Sign in again to continue.');
+  expect(screen.getByRole('link', { name: 'Open sign-in in another tab' }).getAttribute('href')).toBe('/signin');
+  fireEvent.click(screen.getByRole('button', { name: 'Share template' }));
+  expect(await screen.findByText(/Coordinator access is required/)).toBeDefined();
+  expect(screen.getByRole('link', { name: 'Open sign-in in another tab' }).getAttribute('href')).toBe('/signin');
+});
