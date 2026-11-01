@@ -78,3 +78,15 @@ it('keeps an unsaved Parts draft current when this tab saves another part of the
   expect((screen.getByLabelText('Footer role title') as HTMLInputElement).value).toBe('Organist');
   expect(screen.queryByRole('complementary')).toBeNull();
 });
+
+it('discards kept stale entries so they do not return on the next open', () => {
+  window.sessionStorage.setItem('program-rundown:parts-draft:1', JSON.stringify({ version: 1, parts: [], footer: [{ ...pianist, title: 'Organist' }] }));
+  const newer = { ...program, version: 2 };
+  const view = render(editor({ program: newer }));
+  fireEvent.click(within(screen.getByRole('complementary')).getByRole('button', { name: 'Discard my kept entries' }));
+  expect(screen.queryByRole('complementary')).toBeNull();
+  view.unmount();
+  render(editor({ program: newer }));
+  expect(screen.queryByRole('complementary')).toBeNull();
+  expect((screen.getByLabelText('Footer role title') as HTMLInputElement).value).toBe('Pianist');
+});

@@ -177,7 +177,7 @@ The seed adds placeholder direct Parts, an intentionally unlisted tick, and a Fo
 5. Verify the Rundown preview prints `Opening Song` bold, then the participant and Detail once beneath it. Edit the Item label without saving and verify the preview updates live.
 6. Publish and open the reader link. Verify the reader and print view use the same Part and Footer presentation.
 7. Remove a content target with a Part and save. Verify its orphaned Part is removed atomically.
-8. Open two tabs, save Parts in one, then attempt a stale Parts save in the other. Verify the stale write is rejected and editing locks until **Reload saved Program**. After reloading (or reopening the page), verify the saved Parts show and the stale draft stays separate behind **Reapply my Parts entries**.
+8. Open two tabs, save Parts in one, then attempt a stale Parts save in the other. Verify the stale write is rejected and editing locks until **Reload saved Program**. After reloading (or reopening the page), verify the saved Parts show and the stale draft stays separate behind **Reapply my Parts entries**, and that **Discard my kept entries** removes it.
 9. Run the explicit seed twice and confirm later Part, Footer, and Program edits remain unchanged.
 
 **Safe actions:** Automated tests use temporary databases and local placeholder identities.

@@ -151,14 +151,14 @@ it('keeps Publish disabled until Header and rundown changes are saved', async ()
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'New title' } });
   fireEvent.change(screen.getByLabelText('Section heading (optional)'), { target: { value: 'Welcome' } });
   expect(publish().disabled).toBe(true);
-  expect(screen.getByText('Save your Header and rundown changes before publishing.')).toBeDefined();
+  expect(screen.getByText('Save your Header, rundown, and Parts and Footer changes before publishing.')).toBeDefined();
   fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
   await screen.findByText('Draft saved.');
   expect(publish().disabled).toBe(true);
   fireEvent.submit(screen.getByRole('form', { name: 'Rundown' }));
   await screen.findByText('Rundown saved.');
   expect(publish().disabled).toBe(false);
-  expect(screen.queryByText('Save your Header and rundown changes before publishing.')).toBeNull();
+  expect(screen.queryByText('Save your Header, rundown, and Parts and Footer changes before publishing.')).toBeNull();
   fireEvent.click(publish());
   await screen.findByText('Program published. Anyone with the link can read and print it.');
   expect(JSON.parse(fetcher.mock.calls[2][1].body)).toMatchObject({ version: 2 });
