@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Header, HeaderErrors, Program } from '../../../src/domain/programs.js';
-import type { ContentNode } from '../../../src/domain/content.js';
+import { contentLimits, type ContentNode } from '../../../src/domain/content.js';
 import { ContentEditor } from '../editor/ContentEditor.js';
 
 const blank: Header = { title: '', subtitle: '', date: null, startTime: null, endTime: null };
@@ -127,7 +127,7 @@ export function Programs() {
             <input id={`header-${key}`} type={key === 'title' ? 'text' : key === 'date' ? 'date' : 'time'} required={key === 'title'} maxLength={key === 'title' ? 200 : undefined} value={header[key] || ''} aria-invalid={Boolean(errors[key])} aria-describedby={errors[key] ? `error-${key}` : undefined} onChange={event => setHeader({ ...header, [key]: event.target.value || (key === 'title' ? '' : null) })}/>
             {errors[key] && <p className="field-error" id={`error-${key}`}>{errors[key]}</p>}
           </div>)}
-          <div className="title-field"><label htmlFor="header-subtitle">Subtitle (optional)</label><input id="header-subtitle" type="text" maxLength={500} value={header.subtitle} aria-invalid={Boolean(errors.subtitle)} aria-describedby={errors.subtitle ? 'error-subtitle' : undefined} onChange={event => setHeader({ ...header, subtitle: event.target.value })}/>{errors.subtitle && <p className="field-error" id="error-subtitle">{errors.subtitle}</p>}</div>
+          <div className="title-field"><label htmlFor="header-subtitle">Subtitle (optional)</label><input id="header-subtitle" type="text" maxLength={contentLimits.subtitle} value={header.subtitle} aria-invalid={Boolean(errors.subtitle)} aria-describedby={errors.subtitle ? 'error-subtitle' : undefined} onChange={event => setHeader({ ...header, subtitle: event.target.value })}/>{errors.subtitle && <p className="field-error" id="error-subtitle">{errors.subtitle}</p>}</div>
         </div>
         {errors.form && <p>{errors.form}</p>}{errors.version && <p>{errors.version}</p>}
         <button className="primary" type="submit" disabled={busy || publishing || conflict}>{busy ? 'Saving…' : 'Save Draft'}</button>

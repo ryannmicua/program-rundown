@@ -1,6 +1,6 @@
 import type { ContentNode } from '../../../src/domain/content.js';
 
-function displayDate(value: string) {
+export function displayDate(value: string) {
   return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
 }
 
@@ -13,9 +13,9 @@ function Block({ node, nodes }: { node: ContentNode; nodes: ContentNode[] }) {
   const name = node.kind === 'mini-program' ? 'mini-program' : 'Section';
   return <section className={`preview-section preview-${node.kind}`} aria-label={node.kind === 'section' && !node.label ? 'Unheaded Section' : `${name}: ${node.label}`} data-block-label={node.blockLabel || undefined}>
     {node.label && <h4>{node.label}</h4>}{node.kind === 'mini-program' && node.date && <p className="mini-program-date">{displayDate(node.date)}</p>}<Times node={node}/>
-    {node.kind === 'section' || node.kind === 'mini-program' ? <ol>{children.map(child => child.kind === 'item'
+    <ol>{children.map(child => child.kind === 'item'
       ? <li key={child.id}><strong>{child.label}</strong><Times node={child}/>{child.detail && <p className="note-text">{child.detail}</p>}</li>
-      : <li key={child.id}><Block node={child} nodes={nodes}/></li>)}</ol> : null}
+      : <li key={child.id}><Block node={child} nodes={nodes}/></li>)}</ol>
   </section>;
 }
 

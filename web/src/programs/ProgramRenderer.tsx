@@ -1,10 +1,6 @@
 import type { Program } from '../../../src/domain/programs.js';
 import type { ContentNode } from '../../../src/domain/content.js';
-import { Rundown } from '../editor/Rundown.js';
-
-function displayDate(value: string) {
-  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
-}
+import { displayDate, Rundown } from '../editor/Rundown.js';
 
 function displayTime(value: string) {
   const time = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }).format(new Date(`1970-01-01T${value}:00Z`));

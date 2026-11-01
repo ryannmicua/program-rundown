@@ -30,7 +30,7 @@ it('persists nested Sections and mini-programs, validates parents and cycles, an
     ]);
     expect((await send(`/${program.id}/content`, { version: 2, nodes: nodes.map(node => node.id === 'gathering' ? { ...node, parentId: 'closing-section' } : node) })).status).toBe(400);
     expect((await send(`/${program.id}/content`, { version: 2, nodes: [{ ...nodes[0], parentId: 'other-program' }] })).status).toBe(400);
-    expect((await send(`/${program.id}`, { subtitle: '', version: 2 }, 'PATCH')).status).toBe(200);
+    expect((await send(`/${program.id}`, { subtitle: '   ', version: 2 }, 'PATCH')).status).toBe(200);
     const reopened = await fetch(`${f.origin}/api/programs/${program.id}`, { headers: { cookie } }).then(response => response.json());
     expect(reopened.program.subtitle).toBe('');
     expect(reopened.nodes).toEqual(stored);

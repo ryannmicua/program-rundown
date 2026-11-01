@@ -58,12 +58,13 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
       {(['startTime', 'endTime'] as const).map(key => <div key={key}><label htmlFor={`${node.id}-${key}`}>{key === 'startTime' ? 'Start time' : 'End time'} (optional)</label><input id={`${node.id}-${key}`} type="time" value={node[key] || ''} onChange={event => edit(node.id, { [key]: event.target.value || null })}/></div>)}
     </div>;
   }
-  function renderNode(node: ContentNode, index: number) {
+  function renderNode(node: ContentNode, parent?: ContentNode) {
     if (node.kind === 'item') return <li key={node.id}><div className="content-item" role="group" aria-label={`Item: ${node.label || 'New Item'}`}><h4>{node.label || 'New Item'}</h4>{fields(node)}{controls(node)}</div></li>;
     const children = nodes.filter(child => child.parentId === node.id);
-    const title = node.kind === 'section' ? `Section ${index + 1}: ${node.label || 'Unheaded'}` : `Mini-program: ${node.label}`;
+    const number = nodes.filter(other => other.parentId === node.parentId && other.kind === 'section').indexOf(node) + 1;
+    const title = node.kind === 'section' ? `Section ${number}${parent ? ` in ${parent.label || 'Unheaded Section'}` : ''}: ${node.label || 'Unheaded'}` : `Mini-program: ${node.label}`;
     return <li key={node.id}><section className="content-section" aria-label={title}><h3>{node.label || 'Unheaded Section'}</h3>{fields(node)}{controls(node)}
-      <ol className="content-items">{children.map((child, childIndex) => renderNode(child, childIndex))}</ol>
+      <ol className="content-items">{children.map(child => renderNode(child, node))}</ol>
       {node.kind === 'section' && <button type="button" onClick={() => add('item', node.id)}>Add Item</button>}
       <button type="button" onClick={() => add('section', node.id)}>Add Section</button><button type="button" onClick={() => add('mini-program', node.id)}>Add mini-program</button>
     </section></li>;
@@ -79,7 +80,7 @@ export function ContentEditor({ program, initialNodes, onSaved, onDirtyChange, r
       <fieldset disabled={busy || conflict}>
         <legend className="sr-only">Sections and Items</legend>
         {!roots.length && <p>No Sections yet. Add a Section or mini-program to start your rundown.</p>}
-        <ol className="content-sections">{roots.map((node, index) => renderNode(node, index))}</ol>
+        <ol className="content-sections">{roots.map(node => renderNode(node))}</ol>
         <button type="button" onClick={() => add('section', null)}>Add top-level Section</button><button type="button" onClick={() => add('mini-program', null)}>Add top-level mini-program</button>
         <button className="primary save-rundown" type="submit" disabled={!dirty || busy || conflict}>{busy ? 'Saving rundown…' : 'Save rundown'}</button>
         {dirty && <p>Unsaved rundown changes.</p>}

@@ -21,9 +21,9 @@ test('composes nested Sections and mini-programs with a subtitle and reads the s
     await morning.getByLabel('Mini-program title').fill('Morning Service');
     await morning.getByLabel('Mini-program date (optional)').fill('2026-11-07');
     await morning.getByRole('button', { name: 'Add Section', exact: true }).click();
-    let dedication = editor.getByRole('region', { name: 'Section 1: Unheaded' });
+    let dedication = editor.getByRole('region', { name: 'Section 1 in Morning Service: Unheaded', exact: true });
     await dedication.getByLabel('Section heading (optional)').fill('Dedication');
-    dedication = editor.getByRole('region', { name: 'Section 1: Dedication' });
+    dedication = editor.getByRole('region', { name: 'Section 1 in Morning Service: Dedication', exact: true });
     await dedication.getByRole('button', { name: 'Add Item', exact: true }).click();
     await dedication.getByLabel('Item label', { exact: true }).fill('Prayer');
     await dedication.getByLabel('Detail (optional)').fill('A placeholder detail.');
