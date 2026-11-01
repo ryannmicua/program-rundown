@@ -94,10 +94,6 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   useEffect(() => { if (scrolledToPart.current || !window.location.hash.startsWith('#part-')) return; const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); if (target) { scrolledToPart.current = true; target.scrollIntoView(); } }, [parts]);
   useEffect(() => { onChange(parts, footer); }, [parts, footer]);
   useEffect(() => { onDirtyChange(dirty); }, [dirty]);
-  useEffect(() => {
-    const target = decodeURIComponent(window.location.hash.slice(1));
-    if (target.startsWith('part-target-')) document.getElementById(target)?.scrollIntoView?.({ block: 'start' });
-  }, [nodes, initialFooter]);
   function editPart(id: string, fields: Partial<DirectPart>) { setParts(current => current.map(part => part.id === id ? { ...part, ...fields } : part)); setDirty(true); setInvalidId(''); setMessage(''); }
   function addPart(targetId: string, targetKind: DirectPart['targetKind']) { setParts(current => [...current, makePart(targetId, targetKind)]); setDirty(true); setMessage(''); }
   function addFooter() { const role = { id: crypto.randomUUID(), title: '' }; setFooter(current => [...current, role]); addPart(role.id, 'footer'); }

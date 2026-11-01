@@ -12,14 +12,16 @@ export function unassignedRoutes(db: DatabaseSync, coordinator: RequestHandler) 
       part.role, part.name, part.extra_info AS extraInfo,
       part.intentionally_not_listed AS intentionallyNotListed,
       d.role AS participantRole, d.name AS participantName, d.honorific AS participantHonorific,
-      d.position AS participantPosition, d.organization AS participantOrganization, d.subtitle AS participantSubtitle
+      d.position AS participantPosition, d.organization AS participantOrganization, d.subtitle AS participantSubtitle,
+      fr.title AS footerTitle
       FROM programs p JOIN parts part ON part.program_id = p.id
       LEFT JOIN events e ON e.id = p.event_id
       LEFT JOIN participants d ON d.id = part.participant_id
+      LEFT JOIN footer_roles fr ON part.target_kind = 'footer' AND fr.program_id = p.id AND fr.id = part.target_id
       WHERE ${programAccessSql('p')}
-      ORDER BY COALESCE(e.id, p.id), p.event_position, p.id, part.position`).all(res.locals.user.id, res.locals.user.id) as Record<string, unknown>[];
+      ORDER BY e.id IS NULL, e.id, p.event_position, p.id, part.position`).all(res.locals.user.id, res.locals.user.id) as Record<string, unknown>[];
     const records: ReviewPart[] = [];
-    const contentCache = new Map<number, { id: string; parentId: string | null; kind: string; label: string }[]>();
+    const contentCache = new Map<number, Map<string, { id: string; parentId: string | null; kind: string; label: string }>>();
     for (const row of rows) {
       const programId = Number(row.programId);
       const targetId = String(row.targetId);
@@ -27,16 +29,15 @@ export function unassignedRoutes(db: DatabaseSync, coordinator: RequestHandler) 
       let targetLabel: string;
       let targetPath: string;
       if (targetKind === 'footer') {
-        const footer = db.prepare('SELECT title FROM footer_roles WHERE program_id = ? AND id = ?').get(programId, targetId) as { title: string } | undefined;
-        targetLabel = footer?.title || 'Removed Footer role';
+        targetLabel = String(row.footerTitle || '') || 'Removed Footer role';
         targetPath = `Footer · ${targetLabel}`;
       } else {
-        let nodes = contentCache.get(programId);
-        if (!nodes) {
-          nodes = db.prepare('SELECT id, parent_id AS parentId, kind, label FROM content_nodes WHERE program_id = ? ORDER BY position').all(programId) as unknown as { id: string; parentId: string | null; kind: string; label: string }[];
-          contentCache.set(programId, nodes || []);
+        let byId = contentCache.get(programId);
+        if (!byId) {
+          const nodes = db.prepare('SELECT id, parent_id AS parentId, kind, label FROM content_nodes WHERE program_id = ?').all(programId) as unknown as { id: string; parentId: string | null; kind: string; label: string }[];
+          byId = new Map(nodes.map(node => [node.id, node]));
+          contentCache.set(programId, byId);
         }
-        const byId = new Map((nodes || []).map(node => [node.id, node]));
         const target = byId.get(targetId);
         targetLabel = target?.label || (targetKind === 'item' ? 'Untitled Item' : targetKind === 'section' ? 'Unheaded Section' : 'Untitled mini-program');
         const parents: string[] = [];

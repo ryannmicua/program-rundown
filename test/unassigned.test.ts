@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { openProduct } from '../src/db/product.js';
-import { awaitsNamedAssignment } from '../src/domain/unassigned.js';
+import { awaitsNamedAssignment, filterReviewParts } from '../src/domain/unassigned.js';
 import { fixture } from './support.js';
 
 it('classifies blank and unnamed role assignments while preserving free text and intentional omissions', () => {
@@ -47,8 +47,13 @@ it('lists unassigned Parts across accessible Programs, links each location, and 
     expect(result.parts[0]).toMatchObject({ programId: first.id, programTitle: 'First Placeholder', targetPath: 'Opening › Opening Song' });
     expect(result.parts[1]).toMatchObject({ targetLabel: 'Opening', extraInfo: 'Placeholder note' });
     expect(result.parts[2].participant).toMatchObject({ role: 'Reader', name: '' });
-    const filtered = result.parts.filter((part: { programId: number }) => part.programId === first.id);
-    expect(filtered).toHaveLength(3);
+    const ids = (query: string, programId: number | null) => filterReviewParts(result.parts, query, programId).map(part => part.id);
+    expect(ids('', first.id)).toEqual(['role-only', 'blank-with-notes', 'role-reference']);
+    expect(ids('', second.id)).toEqual([]);
+    expect(ids('placeholder NOTE', null)).toEqual(['blank-with-notes']);
+    expect(ids('reader', first.id)).toEqual(['role-only', 'role-reference']);
+    expect(ids('Opening Song', null)).toEqual(['role-only', 'role-reference']);
+    expect(ids('no such placeholder', null)).toEqual([]);
     expect((await send('/api/unassigned')).status).toBe(200);
     f.issuer.setSubject('outside-coordinator-placeholder');
     const outsider = await f.signIn();
