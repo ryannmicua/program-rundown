@@ -136,3 +136,28 @@ it('explains that only the creator can edit a shared Participant definition', as
   fireEvent.click(screen.getByRole('button', { name: 'Save Participant changes' }));
   expect((await screen.findByRole('alert')).textContent).toBe(refusal);
 });
+
+it('previews destination Parts before moving or copying and acknowledges the completed operation', async () => {
+  const eventProgram = { ...program, eventId: 5 };
+  const destinationProgram = { ...eventProgram, id: 2, title: 'Sabbath School' };
+  const fetcher = vi.fn(async (input: string, init?: RequestInit) => {
+    if (input === '/api/participants') return new Response(JSON.stringify({ participants: [] }));
+    if (input === '/api/programs') return new Response(JSON.stringify({ programs: [eventProgram, destinationProgram] }));
+    if (input === '/api/programs/1') return new Response(JSON.stringify({ program: eventProgram, nodes, parts: [leader], footer: [] }));
+    if (input === '/api/programs/2') return new Response(JSON.stringify({ program: destinationProgram, nodes, parts: [{ ...leader, id: 'existing', value: 'Congregation' }], footer: [] }));
+    if (input.endsWith('/transfer')) return new Response(JSON.stringify({ source: { parts: [leader], footer: [], version: 2 }, destination: { parts: [leader], footer: [], version: 2 } }));
+    throw Error(`Unexpected request ${input} ${init?.method || ''}`);
+  });
+  vi.stubGlobal('fetch', fetcher);
+  render(editor({ program: eventProgram, initialParts: [leader], initialFooter: [] }));
+  fireEvent.click(screen.getByRole('button', { name: 'Move or copy Part' }));
+  await screen.findByRole('option', { name: 'Opening Song' });
+  fireEvent.change(screen.getByLabelText('Destination Program'), { target: { value: '2' } });
+  await screen.findByText('Existing destination Parts will stay in place:');
+  expect(screen.getByText('Song Leader')).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy everything' }));
+  await screen.findByRole('status');
+  const request = fetcher.mock.calls.find(([input]) => input.endsWith('/transfer'))!;
+  expect(JSON.parse(String(request[1]?.body))).toMatchObject({ destinationProgramId: 2, operation: 'copy', copyMode: 'everything' });
+  expect(screen.getByText(/Part copied to Opening Song/)).toBeDefined();
+});

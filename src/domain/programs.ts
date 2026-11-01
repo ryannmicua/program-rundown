@@ -1,7 +1,7 @@
 import { contentLimits } from './content.js';
 
 export type Header = { title: string; subtitle: string; date: string | null; startTime: string | null; endTime: string | null };
-export type Program = Header & { id: number; status: 'Draft' | 'Published'; version: number };
+export type Program = Header & { id: number; eventId?: number | null; status: 'Draft' | 'Published'; version: number };
 export type HeaderErrors = Partial<Record<keyof Header | 'version' | 'form', string>>;
 
 export function validateHeader(body: unknown, editing: boolean): HeaderErrors {

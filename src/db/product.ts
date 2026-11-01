@@ -10,6 +10,7 @@ import { partsMigration } from './migrations/006-parts.js';
 import { participantsMigration } from './migrations/007-participants.js';
 import { eventsMigration } from './migrations/008-events.js';
 import { templatesMigration } from './migrations/009-templates.js';
+import { movePartSeedsMigration } from './migrations/010-move-part-seeds.js';
 
 export function openDatabase(path: string) {
   mkdirSync(dirname(path), { recursive: true });
@@ -20,7 +21,7 @@ export function openDatabase(path: string) {
 export function openProduct(path: string) {
   const db = openDatabase(path);
   db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)');
-  for (const migration of [identityMigration, programsMigration, contentMigration, publicationMigration, nestingMigration, partsMigration, participantsMigration, eventsMigration, templatesMigration]) {
+  for (const migration of [identityMigration, programsMigration, contentMigration, publicationMigration, nestingMigration, partsMigration, participantsMigration, eventsMigration, templatesMigration, movePartSeedsMigration]) {
     if (db.prepare('SELECT version FROM schema_migrations WHERE version = ?').get(migration.version)) continue;
     db.exec('BEGIN IMMEDIATE');
     try {
