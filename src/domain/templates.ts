@@ -7,7 +7,7 @@ export function createTemplateSnapshot(nodes: ContentNode[], parts: DirectPart[]
     nodes: nodes.map(node => node.kind === 'mini-program' ? { ...node, date: null, startTime: null, endTime: null } : { ...node }),
     footer: footer.map(role => ({ ...role })),
     parts: parts.map(part => {
-      const role = part.kind === 'role' || part.kind === 'structured' ? part.role : part.kind === 'reference' && part.referenceMode === 'role' ? part.participant?.role || '' : '';
+      const role = part.kind === 'role' || part.kind === 'structured' ? part.role : part.kind === 'reference' ? part.participant?.role || '' : '';
       return { ...part, kind: role ? 'role' : 'blank', value: '', role, name: '', intentionallyNotListed: Boolean(part.intentionallyNotListed), participantId: undefined, referenceMode: undefined, participant: undefined };
     }),
   };

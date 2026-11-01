@@ -64,7 +64,7 @@ export function Programs() {
 
   async function saveTemplate(event: FormEvent) {
     event.preventDefault();
-    if (!saved) return;
+    if (!saved || unsaved) return;
     setSavingTemplate(true); setSlowTemplateSave(false); setTemplateMessage('');
     const timer = window.setTimeout(() => setSlowTemplateSave(true), 1800);
     try {
@@ -137,7 +137,7 @@ export function Programs() {
       <h2>{creating ? 'New Program' : saved ? 'Program settings' : 'Open Draft'}</h2>
       {creating && <p><a href="/templates">Use a saved template</a></p>}
       {saved && <HeaderSummary header={saved}/>}
-      {saved && <form className="template-save template-form" onSubmit={saveTemplate}><h3>Save as template</h3><p>Save this Program's structure and details for reuse. Participant assignments and Header dates and times are left out.</p><label htmlFor="template-name">Template name</label><input id="template-name" required maxLength={200} value={templateName} onChange={event => setTemplateName(event.target.value)}/><button type="submit" disabled={savingTemplate}>{savingTemplate ? slowTemplateSave ? 'Still saving template…' : 'Saving template…' : 'Save as template'}</button>{slowTemplateSave && <><p role="status">This is taking longer than usual. Your Program remains saved.</p><div className="loading-progress" aria-hidden="true"/></>}{templateMessage && <p role={templateMessage.includes('saved.') ? 'status' : 'alert'}>{templateMessage}{templateMessage.startsWith('Your session ended') && <> <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a></>}</p>}</form>}
+      {saved && <form className="template-save template-form" onSubmit={saveTemplate}><h3>Save as template</h3><p>Save this Program's structure and details for reuse. Participant assignments and Header dates and times are left out.</p><label htmlFor="template-name">Template name</label><input id="template-name" required maxLength={200} value={templateName} onChange={event => setTemplateName(event.target.value)}/><button type="submit" disabled={savingTemplate || unsaved}>{savingTemplate ? slowTemplateSave ? 'Still saving template…' : 'Saving template…' : 'Save as template'}</button>{unsaved && <p>Save your Header, rundown, and Parts and Footer changes before saving a template.</p>}{slowTemplateSave && <><p role="status">This is taking longer than usual. Your Program remains saved.</p><div className="loading-progress" aria-hidden="true"/></>}{templateMessage && <p role={templateMessage.includes('saved.') ? 'status' : 'alert'}>{templateMessage}{templateMessage.startsWith('Your session ended') && <> <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a></>}</p>}</form>}
       {error && <div role="alert"><p>{error}</p>{error.startsWith('Your session ended') && <a href="/signin" target="_blank" rel="noreferrer">Open sign-in in another tab</a>}{!creating && (!saved || conflict) && <button disabled={busy} onClick={load}>{conflict ? 'Reload saved Draft' : 'Try again'}</button>}</div>}
       {message && <p role="status">{message}</p>}
       {publishError && <p role="alert">{publishError} <button type="button" disabled={busy || publishing || unsaved} onClick={() => void publish()}>Try again</button></p>}

@@ -29,7 +29,7 @@ it('saves an owned snapshot, strips people and Header times, and creates indepen
     expect((await json(f.origin, cookie, '/api/templates')).status).toBe(200);
     const detail = await (await json(f.origin, cookie, `/api/templates/${template.id}`)).json();
     expect(detail.nodes.find((node: { id: string }) => node.id === 'demo-introit')).toMatchObject({ detail: 'A song of welcome\nSing together.' });
-    expect(detail.parts.find((part: { id: string }) => part.id === 'demo-introit-leader')).toMatchObject({ kind: 'blank', name: '', value: '', extraInfo: 'Rehearsal note' });
+    expect(detail.parts.find((part: { id: string }) => part.id === 'demo-introit-leader')).toMatchObject({ kind: 'role', role: 'Speaker', name: '', value: '', extraInfo: 'Rehearsal note' });
     expect(detail.parts.find((part: { id: string }) => part.id === 'demo-prayer-role')).toMatchObject({ kind: 'role', role: 'Prayer Leader', name: '' });
     expect(detail.parts.find((part: { id: string }) => part.id === 'demo-group-assignment')).toMatchObject({ kind: 'blank', value: '', extraInfo: 'Microphone note' });
     expect(detail.parts.find((part: { id: string }) => part.id === 'demo-role-placeholder')).toMatchObject({ kind: 'role', role: 'Reader', name: '' });
