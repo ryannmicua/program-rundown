@@ -67,3 +67,14 @@ it('shows the saved Parts after a conflict and keeps the stale draft behind an e
   expect((screen.getByLabelText('Footer role title') as HTMLInputElement).value).toBe('Organist');
   expect(JSON.parse(window.sessionStorage.getItem('program-rundown:parts-draft:1')!).version).toBe(2);
 });
+
+it('keeps an unsaved Parts draft current when this tab saves another part of the Program', () => {
+  const initialParts: [] = [];
+  const view = render(editor({ initialParts }));
+  fireEvent.change(screen.getByLabelText('Footer role title'), { target: { value: 'Organist' } });
+  view.rerender(editor({ initialParts, program: { ...program, version: 2 } }));
+  view.unmount();
+  render(editor({ program: { ...program, version: 2 } }));
+  expect((screen.getByLabelText('Footer role title') as HTMLInputElement).value).toBe('Organist');
+  expect(screen.queryByRole('complementary')).toBeNull();
+});

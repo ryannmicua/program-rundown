@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ContentNode } from '../../../src/domain/content.js';
 import type { DirectPart, FooterRole } from '../../../src/domain/parts.js';
 import type { Program } from '../../../src/domain/programs.js';
@@ -24,13 +24,15 @@ export function PartsEditor({ program, nodes, initialParts, initialFooter, onSav
   const [dirty, setDirty] = useState(false);
   const [slow, setSlow] = useState(false);
   const [invalidId, setInvalidId] = useState('');
+  const loadedParts = useRef(initialParts);
+  useEffect(() => { try { if (dirty && loadedParts.current === initialParts) window.sessionStorage.setItem(draftKey, JSON.stringify({ version: program.version, parts, footer })); } catch { /* current page state remains available */ } }, [parts, footer, dirty, draftKey, program.version]);
   useEffect(() => {
+    loadedParts.current = initialParts;
     const draft = readDraft();
     if (draft?.version === program.version) { setParts(draft.parts); setFooter(draft.footer); setKept(undefined); setDirty(true); }
     else { const unsaved = dirty ? { parts, footer } : draft; if (unsaved) setKept(unsaved); setParts(initialParts); setFooter(initialFooter); setDirty(false); }
     setConflict(false); setError(''); setInvalidId('');
   }, [initialParts, initialFooter]);
-  useEffect(() => { try { if (dirty) window.sessionStorage.setItem(draftKey, JSON.stringify({ version: program.version, parts, footer })); } catch { /* current page state remains available */ } }, [parts, footer, dirty, draftKey]);
   useEffect(() => { setParts(onTargets); }, [nodes]);
   useEffect(() => { onChange(parts, footer); }, [parts, footer]);
   useEffect(() => { onDirtyChange(dirty); }, [dirty]);
