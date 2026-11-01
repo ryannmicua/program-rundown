@@ -9,9 +9,10 @@ function Times({ node }: { node: ContentNode }) {
   return node.startTime || node.endTime ? <p className="content-times">{node.startTime && <>Start {node.startTime}</>}{node.startTime && node.endTime && ' · '}{node.endTime && <>End {node.endTime}</>}</p> : null;
 }
 
-export function participant(part: ListedPart) { return part.kind === 'text' ? part.value : part.kind === 'role' ? part.role : part.kind === 'structured' ? part.name.trim() || part.role : ''; }
+export function participant(part: ListedPart) { return part.kind === 'reference' ? part.participant ? `${part.referenceMode === 'name' ? [part.participant.honorific, part.participant.name].filter(Boolean).join(' ') || part.participant.role : part.participant.name ? [part.participant.honorific, part.participant.name].filter(Boolean).join(' ') : part.participant.role}` : '' : part.kind === 'text' ? part.value : part.kind === 'role' ? part.role : part.kind === 'structured' ? part.name.trim() || part.role : ''; }
+export function participantSubtitle(part: ListedPart) { return part.kind === 'reference' && part.participant ? [ [part.participant.position, part.participant.organization].filter(Boolean).join(', '), part.participant.subtitle ].filter(Boolean) : []; }
 function PartLines({ node, parts }: { node: ContentNode; parts: ListedPart[] }) {
-  return <>{parts.filter(part => part.targetId === node.id && part.targetKind === node.kind).map(part => <div className="part-line" key={part.id}>{participant(part) && <p className="part-participant">{participant(part)}</p>}{part.extraInfo && <p className="part-extra-info">{part.extraInfo}</p>}</div>)}</>;
+  return <>{parts.filter(part => part.targetId === node.id && part.targetKind === node.kind).map(part => <div className="part-line" key={part.id}>{participant(part) && <p className="part-participant">{participant(part)}</p>}{participantSubtitle(part).map((line, index) => <p className="participant-subtitle" key={index}>{line}</p>)}{part.extraInfo && <p className="part-extra-info">{part.extraInfo}</p>}</div>)}</>;
 }
 function Block({ node, nodes, parts }: { node: ContentNode; nodes: ContentNode[]; parts: ListedPart[] }) {
   const children = nodes.filter(child => child.parentId === node.id);

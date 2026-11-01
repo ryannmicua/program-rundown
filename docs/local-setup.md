@@ -41,11 +41,11 @@ It creates the standalone `Community Gathering` Draft Header, with no date, a 09
 It adds ordered Sections and Items, including an unheaded closing Section, literal `*Introit`, multiline Detail, and independent optional times.
 It also creates `Example Published Program`, already published, so its `/p/<id>` reader link works without signing in.
 That Program has the subtitle `A day of gratitude` and a nested rundown: a `featured` Section containing the `Morning Service` mini-program (with a `Dedication` Section) and a `Closing Program` mini-program with an unheaded labelled Section.
-`Community Gathering` includes placeholder direct Parts, an intentionally unlisted Part, and an ordered `Pianist` Footer role.
+`Community Gathering` includes an Alex Placeholder definition reused in another Program, direct Parts, an intentionally unlisted Part, and an ordered `Pianist` Footer role.
 The seed uses placeholder names only and never opens feedback storage.
 The configured coordinator owns every demo Program and can open it immediately after sign-in, including when the seed runs before first sign-in.
-Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
-If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs only.
+Repeating the seed preserves edited Headers, rundown content, Parts, Footer roles, Participant definitions, and deliberate removals, plus unrelated Programs, sessions, identity mappings, and feedback.
+If the operator replaces the configured coordinator subject, rerunning the seed grants that identity ownership of demo Programs and seed-owned Participant definitions.
 Startup applies additive product migrations; startup and deployment never reset or seed data.
 
 ## Create and reopen a Draft

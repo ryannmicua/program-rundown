@@ -70,11 +70,32 @@ export function seedProduct(env = process.env) {
       }
       db.prepare('INSERT INTO demo_parts_seeds VALUES (?)').run(program.id);
     }
+    db.prepare('UPDATE participants SET owner_id = ? WHERE seed_key IS NOT NULL AND owner_id != ?').run(identity.id, identity.id);
+    if (!db.prepare('SELECT 1 FROM demo_participant_seeds WHERE program_id = ?').get(program.id)) {
+      const insertParticipant = db.prepare('INSERT OR IGNORE INTO participants (owner_id, seed_key, role, name, honorific, position, organization, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      insertParticipant.run(identity.id, 'demo-speaker', 'Speaker', 'Alex Placeholder', 'Dr.', 'Education Director', 'Example Conference', 'Guest speaker');
+      insertParticipant.run(identity.id, 'demo-reader', 'Reader', 'Jamie Placeholder', '', '', '', '');
+      insertParticipant.run(identity.id, 'demo-pianist-participant', 'Pianist', 'Morgan Placeholder', '', 'Music Director', 'Example Conference', '');
+      const speaker = db.prepare("SELECT id FROM participants WHERE seed_key = 'demo-speaker'").get() as { id: number };
+      // Convert only the original seed assignment; later coordinator edits remain untouched.
+      const converted = db.prepare("UPDATE parts SET kind = 'reference', value = '', role = '', name = '', participant_id = ?, reference_mode = 'name' WHERE program_id = ? AND id = 'demo-introit-leader' AND kind = 'structured' AND role = 'Song Leader' AND name = 'Alex Placeholder' AND participant_id IS NULL").run(speaker.id, program.id);
+      if (converted.changes) db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(program.id);
+      db.prepare('INSERT INTO demo_participant_seeds VALUES (?)').run(program.id);
+    }
+    if (!db.prepare('SELECT 1 FROM demo_participant_seeds WHERE program_id = ?').get(published.id)) {
+      const speaker = db.prepare("SELECT id FROM participants WHERE seed_key = 'demo-speaker' AND owner_id = ?").get(identity.id) as { id: number } | undefined;
+      const welcome = db.prepare("SELECT 1 FROM content_nodes WHERE program_id = ? AND id = 'demo-welcome' AND kind = 'item'").get(published.id);
+      if (speaker && welcome && !db.prepare("SELECT 1 FROM parts WHERE program_id = ? AND target_id = 'demo-welcome'").get(published.id)) {
+        db.prepare("INSERT INTO parts (program_id, id, target_id, target_kind, kind, extra_info, position, participant_id, reference_mode) SELECT ?, 'demo-welcome-speaker', 'demo-welcome', 'item', 'reference', '', COALESCE(MAX(position) + 1, 0), ?, 'role' FROM parts WHERE program_id = ?").run(published.id, speaker.id, published.id);
+        db.prepare('UPDATE programs SET version = version + 1 WHERE id = ?').run(published.id);
+      }
+      db.prepare('INSERT INTO demo_participant_seeds VALUES (?)').run(published.id);
+    }
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
   finally { db.close(); }
 }
 if (process.argv[1]?.endsWith('/seed.ts') || process.argv[1]?.endsWith('/seed.js')) {
   seedProduct();
-  console.log('U6 demo ready: direct Parts, an intentionally unlisted Part, and a Footer role. Existing edits and feedback preserved.');
+  console.log('U7 demo ready: reusable Participant definitions by name and role. Existing edits and feedback preserved.');
 }

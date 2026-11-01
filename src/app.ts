@@ -10,6 +10,7 @@ import { programRoutes } from './api/programs.js';
 import { contentRoutes } from './api/content.js';
 import { publicationRoutes } from './api/publication.js';
 import { partsRoutes } from './api/parts.js';
+import { participantRoutes } from './api/participants.js';
 import { contentBodyLimit } from './domain/content.js';
 
 export async function createApp(config: Config) {
@@ -42,6 +43,7 @@ export async function createApp(config: Config) {
   app.use(publicationRoutes(db, tester));
   app.use(programRoutes(db, tester));
   app.use(contentRoutes(db, tester));
+  app.use(participantRoutes(db, tester));
   app.use(partsRoutes(db, tester));
   let feedback: { close(): void } | undefined;
   if (config.feedbackEnabled) {

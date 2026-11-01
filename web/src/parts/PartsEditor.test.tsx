@@ -90,3 +90,37 @@ it('discards kept stale entries so they do not return on the next open', () => {
   expect(screen.queryByRole('complementary')).toBeNull();
   expect((screen.getByLabelText('Footer role title') as HTMLInputElement).value).toBe('Pianist');
 });
+
+it('shows a reference Part as a saved Participant, clears the definition when switching form, and flags a missing definition inline', async () => {
+  const speaker = { id: 7, role: 'Speaker', name: 'Alex Placeholder', honorific: '', position: '', organization: '', subtitle: '', programs: [] };
+  const fetcher = vi.fn((input: string) => input === '/api/participants'
+    ? Promise.resolve(new Response(JSON.stringify({ participants: [speaker] })))
+    : Promise.resolve(new Response(JSON.stringify({ parts: [], footer: [], version: 2 }))));
+  vi.stubGlobal('fetch', fetcher);
+  const reference = { ...leader, kind: 'reference' as const, role: '', participantId: 7, referenceMode: 'name' as const };
+  render(editor({ initialParts: [reference], initialFooter: [] }));
+  const song = screen.getByRole('region', { name: 'Participants for Opening Song' });
+  await within(song).findByRole('option', { name: /Alex Placeholder/ });
+  expect((within(song).getByLabelText('Participant form') as HTMLSelectElement).value).toBe('reference');
+  fireEvent.change(within(song).getByLabelText('Participant definition'), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save Parts and Footer' }));
+  expect(within(song).getByLabelText('Participant definition').getAttribute('aria-invalid')).toBe('true');
+  expect(within(song).getByText('Choose a saved Participant for this entry.')).toBeDefined();
+  expect(fetcher.mock.calls.filter(([input]) => input !== '/api/participants')).toEqual([]);
+  fireEvent.change(within(song).getByLabelText('Participant form'), { target: { value: 'text' } });
+  fireEvent.change(within(song).getByLabelText('Participant text'), { target: { value: 'Choir' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save Parts and Footer' }));
+  const put = fetcher.mock.calls.find(([input]) => input !== '/api/participants') as unknown as [string, RequestInit];
+  expect(JSON.parse(String(put[1].body)).parts[0]).toMatchObject({ kind: 'text', value: 'Choir', participantId: null, referenceMode: null });
+});
+
+it('keeps a linked reference visible while saved Participants cannot load', async () => {
+  vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response(JSON.stringify({ error: 'down' }), { status: 500 }))));
+  const details = { role: 'Speaker', name: 'Alex Placeholder', honorific: 'Dr.', position: '', organization: '', subtitle: '' };
+  render(editor({ initialParts: [{ ...leader, kind: 'reference', role: '', participantId: 7, referenceMode: 'name', participant: details }], initialFooter: [] }));
+  await screen.findByRole('button', { name: 'Try loading Participants again' });
+  const song = screen.getByRole('region', { name: 'Participants for Opening Song' });
+  expect((within(song).getByLabelText('Participant definition') as HTMLSelectElement).value).toBe('7');
+  expect(within(song).getByRole('option', { name: 'Speaker — Dr. Alex Placeholder' })).toBeDefined();
+  expect(within(song).queryByText(/No saved Participants match/)).toBeNull();
+});

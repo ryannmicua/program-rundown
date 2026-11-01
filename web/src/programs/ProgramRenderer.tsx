@@ -1,6 +1,6 @@
 import type { Program } from '../../../src/domain/programs.js';
 import type { ContentNode } from '../../../src/domain/content.js';
-import { displayDate, participant, Rundown } from '../editor/Rundown.js';
+import { displayDate, participant, participantSubtitle, Rundown } from '../editor/Rundown.js';
 import type { FooterRole, ListedPart } from '../../../src/domain/parts.js';
 
 function displayTime(value: string) {
@@ -19,6 +19,6 @@ export function ProgramRenderer({ program, nodes, parts = [], footer = [], showH
       {program.subtitle && <p className="reader-subtitle">{program.subtitle}</p>}
     </header>
     {nodes.length ? <Rundown nodes={nodes} parts={parts} showHeading={showHeading}/> : <>{showHeading && <Rundown nodes={nodes} parts={parts} showHeading/>}<p className="reader-empty">No rundown details have been added yet.</p></>}
-    {footer.length > 0 && <section className="program-footer" aria-label="Footer standing roles"><h2>Standing roles</h2><dl>{footer.map(role => <div key={role.id}><dt>{role.title}</dt>{parts.filter(part => part.targetKind === 'footer' && part.targetId === role.id).map(part => <dd key={part.id}>{participant(part)}{part.extraInfo && <span className="part-extra-info">{part.extraInfo}</span>}</dd>)}</div>)}</dl></section>}
+    {footer.length > 0 && <section className="program-footer" aria-label="Footer standing roles"><h2>Standing roles</h2><dl>{footer.map(role => <div key={role.id}><dt>{role.title}</dt>{parts.filter(part => part.targetKind === 'footer' && part.targetId === role.id).map(part => <dd key={part.id}><span>{participant(part)}</span>{participantSubtitle(part).map((line, index) => <span className="participant-subtitle" key={index}>{line}</span>)}{part.extraInfo && <span className="part-extra-info">{part.extraInfo}</span>}</dd>)}</div>)}</dl></section>}
   </article>;
 }

@@ -1,9 +1,11 @@
 export type DirectPart = {
   id: string; targetId: string; targetKind: 'item' | 'section' | 'mini-program' | 'footer';
-  kind: 'blank' | 'text' | 'role' | 'structured'; value: string; role: string; name: string;
+  kind: 'blank' | 'text' | 'role' | 'structured' | 'reference'; value: string; role: string; name: string;
   extraInfo: string; intentionallyNotListed: boolean;
+  participantId?: number | null; referenceMode?: 'name' | 'role' | null; participant?: ParticipantDetails;
 };
-export type ListedPart = Omit<DirectPart, 'intentionallyNotListed'>;
+export type ParticipantDetails = { role: string; name: string; honorific: string; position: string; organization: string; subtitle: string };
+export type ListedPart = Omit<DirectPart, 'intentionallyNotListed'> & { participant?: ParticipantDetails };
 export type FooterRole = { id: string; title: string };
 
 export function validateParts(body: unknown, nodes: { id: string; kind: string }[]): string | null {
@@ -16,17 +18,19 @@ export function validateParts(body: unknown, nodes: { id: string; kind: string }
   for (const raw of value.parts) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'Invalid Part fields.';
     const part = raw as Record<string, unknown>;
-    if (Object.keys(part).some(key => !['id','targetId','targetKind','kind','value','role','name','extraInfo','intentionallyNotListed'].includes(key))) return 'Invalid Part fields.';
+    if (Object.keys(part).some(key => !['id','targetId','targetKind','kind','value','role','name','extraInfo','intentionallyNotListed','participantId','referenceMode'].includes(key))) return 'Invalid Part fields.';
     if (typeof part.id !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(part.id) || ids.has(part.id)) return 'Each Part needs a unique ID.';
     ids.add(part.id);
     const targetKind = part.targetKind;
     if (targetKind === 'footer' ? !value.footer.some((entry: any) => entry?.id === part.targetId) : nodeKinds.get(String(part.targetId)) !== targetKind) return 'A Part must belong to an existing Item, block, or Footer role.';
-    if (!['item','section','mini-program','footer'].includes(String(targetKind)) || !['blank','text','role','structured'].includes(String(part.kind))) return 'Choose a supported Part form.';
+    if (!['item','section','mini-program','footer'].includes(String(targetKind)) || !['blank','text','role','structured','reference'].includes(String(part.kind))) return 'Choose a supported Part form.';
     for (const key of ['value','role','name','extraInfo']) if (typeof part[key] !== 'string' || (part[key] as string).length > (key === 'extraInfo' ? 2000 : 500)) return 'Part text is too long.';
     if (typeof part.intentionallyNotListed !== 'boolean') return 'Choose whether the participant is intentionally not listed.';
     if (part.kind === 'role' && !String(part.role).trim()) return 'Enter a role for this Part.';
     if (part.kind === 'structured' && !String(part.role).trim()) return 'Enter a role for this Part.';
     if (part.kind === 'blank' && (part.value || part.role || part.name)) return 'A blank Part cannot contain participant text.';
+    if (part.kind === 'reference' && (!Number.isSafeInteger(part.participantId) || !['name', 'role'].includes(String(part.referenceMode)))) return 'Choose a saved Participant and display mode.';
+    if (part.kind !== 'reference' && (part.participantId != null || part.referenceMode != null)) return 'Only a Participant reference can include a saved definition.';
   }
   for (const raw of value.footer) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return 'Invalid Footer role.';

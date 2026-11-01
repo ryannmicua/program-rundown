@@ -2,6 +2,11 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Programs } from './Programs.js';
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); history.replaceState({}, '', '/'); });
+function withParticipants(fetcher: (...args: any[]) => any) {
+  return vi.fn((input: string, ...args: any[]) => input === '/api/participants'
+    ? Promise.resolve({ ok: true, json: async () => ({ participants: [] }) })
+    : fetcher(input, ...args));
+}
 
 it('keeps local entries on conflict and lets the coordinator explicitly reload the saved Header', async () => {
   history.replaceState({}, '', '/programs/1');
@@ -10,7 +15,7 @@ it('keeps local entries on conflict and lets the coordinator explicitly reload t
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program }) })
     .mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ error: 'This Draft changed. Your entries are kept.' }) })
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'Other saved title', version: 2 } }) });
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', withParticipants(fetcher));
   render(<Programs />);
   await screen.findByDisplayValue('Original Gathering');
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'My unsaved title' } });
@@ -25,7 +30,7 @@ it('keeps local entries on conflict and lets the coordinator explicitly reload t
 
 it('shows field errors without losing a new Header', async () => {
   history.replaceState({}, '', '/programs/new');
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: 'Check the Header fields.', errors: { title: 'Enter a title between 1 and 200 characters.' } }) }));
+  vi.stubGlobal('fetch', withParticipants(vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: 'Check the Header fields.', errors: { title: 'Enter a title between 1 and 200 characters.' } }) })));
   render(<Programs />);
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: '  ' } });
   fireEvent.submit(screen.getByRole('form', { name: 'Program Header' }));
@@ -40,7 +45,7 @@ it('keeps unsaved entries on a failed save of an existing Draft without offering
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program }) })
     .mockRejectedValueOnce(new TypeError('Failed to fetch'))
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'My unsaved title', version: 2 } }) });
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', withParticipants(fetcher));
   render(<Programs />);
   await screen.findByDisplayValue('Original Gathering');
   fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'My unsaved title' } });
@@ -74,7 +79,7 @@ it('shows progress while Program loading is slow and gives an offline retry rout
   history.replaceState({}, '', '/');
   vi.useFakeTimers();
   let complete!: (value: { ok: boolean; json(): Promise<unknown> }) => void;
-  vi.stubGlobal('fetch', vi.fn(() => new Promise(resolve => { complete = resolve; })));
+  vi.stubGlobal('fetch', withParticipants(vi.fn(() => new Promise(resolve => { complete = resolve; }))));
   render(<Programs/>);
   expect(screen.getByRole('status').textContent).toContain('Loading Programs');
   await act(async () => { await vi.advanceTimersByTimeAsync(1800); });
@@ -85,7 +90,7 @@ it('shows progress while Program loading is slow and gives an offline retry rout
   await screen.findByText(/Create a Draft with a title/);
 
   vi.stubGlobal('navigator', { onLine: false });
-  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+  vi.stubGlobal('fetch', withParticipants(vi.fn().mockRejectedValue(new TypeError('offline'))));
   history.replaceState({}, '', '/offline-list-check');
   render(<Programs/>);
   expect((await screen.findByRole('alert')).textContent).toContain('You are offline. Reconnect, then try again.');
@@ -95,9 +100,9 @@ it('shows progress while Program loading is slow and gives an offline retry rout
 it('places Program subtitle validation beside its field and keeps the value', async () => {
   history.replaceState({}, '', '/programs/1');
   const program = { id: 1, title: 'Gathering', subtitle: '', date: null, startTime: null, endTime: null, status: 'Draft', version: 1 };
-  vi.stubGlobal('fetch', vi.fn()
+  vi.stubGlobal('fetch', withParticipants(vi.fn()
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program }) })
-    .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Check the Header fields.', errors: { subtitle: 'Use a Program subtitle of up to 500 characters, or leave it blank.' } }) }));
+    .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Check the Header fields.', errors: { subtitle: 'Use a Program subtitle of up to 500 characters, or leave it blank.' } }) })));
   render(<Programs/>);
   await screen.findByDisplayValue('Gathering');
   fireEvent.change(screen.getByLabelText('Subtitle (optional)'), { target: { value: 'A long subtitle' } });
@@ -114,10 +119,10 @@ it('keeps the other form\'s unsaved entries when one form reloads after a confli
   const section = { id: 'opening', parentId: null, kind: 'section', label: 'Opening', detail: '', startTime: null, endTime: null };
   const conflict = { ok: false, status: 409, json: async () => ({ error: 'This Draft changed.' }) };
   const latest = { ok: true, json: async () => ({ program: { ...program, version: 2 }, nodes: [section] }) };
-  vi.stubGlobal('fetch', vi.fn()
+  vi.stubGlobal('fetch', withParticipants(vi.fn()
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program, nodes: [section] }) })
     .mockResolvedValueOnce(conflict).mockResolvedValueOnce(latest)
-    .mockResolvedValueOnce(conflict).mockResolvedValueOnce(latest));
+    .mockResolvedValueOnce(conflict).mockResolvedValueOnce(latest)));
   render(<Programs />);
   await screen.findByDisplayValue('Original Gathering');
   fireEvent.change(screen.getByLabelText('Section heading (optional)'), { target: { value: 'Unsaved heading' } });
@@ -143,7 +148,7 @@ it('keeps Publish disabled until Header and rundown changes are saved', async ()
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'New title', version: 2 } }) })
     .mockResolvedValueOnce({ ok: true, json: async () => ({ program: { ...program, title: 'New title', version: 3 }, nodes: [{ ...section, label: 'Welcome' }] }) })
     .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', withParticipants(fetcher));
   render(<Programs />);
   await screen.findByDisplayValue('Original Gathering');
   const publish = () => screen.getByRole('button', { name: 'Publish Program' }) as HTMLButtonElement;
